@@ -1,37 +1,46 @@
 import React, { useState } from 'react';
 import AuthLayout from '../layouts/AuthLayout';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios'; // <--- IMPORT THE NEW CONNECTOR
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    
     try {
-      const res = await axios.post('http://127.0.0.1:5000/login', formData);
+      // connecting to: https://homehub-backend-1.onrender.com/api/auth/login
+      const res = await api.post('/auth/login', formData);
       
-      // 1. Save Token & User Details to Local Storage
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('userName', res.data.name);
-      localStorage.setItem('userRole', res.data.role);
-      localStorage.setItem('userEmail', formData.email); // Saving email since we used it to login
+      // 1. Save Token & User Details
+      localStorage.setItem('token', res.data.access_token); // Flask-JWT usually returns 'access_token'
+      localStorage.setItem('userName', res.data.user?.name || 'User');
+      localStorage.setItem('userRole', res.data.user?.role || 'tenant');
+      localStorage.setItem('userEmail', formData.email); 
       
-      // 2. Alert the user
-      alert(`Login Successful! Welcome, ${res.data.name}`);
+      alert(`Login Successful! Welcome, ${res.data.user?.name || 'User'}`);
 
-      // 3. Redirect based on Role
-      if (res.data.role === 'landlord') {
+      // 2. Redirect based on Role
+      const role = res.data.user?.role;
+      if (role === 'landlord') {
         navigate('/landlord/dashboard');
-      } else if (res.data.role === 'admin') {
+      } else if (role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/tenant/dashboard'); 
       }
+
     } catch (error) {
-      console.error(error);
-      alert("Invalid credentials or Server Error");
+      console.error("Login Error:", error);
+      // Show the exact error message from the backend if available
+      const message = error.response?.data?.message || "Invalid credentials or Server Error";
+      alert(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,8 +66,11 @@ const Login = () => {
           onChange={e => setFormData({...formData, password: e.target.value})} 
           required
         />
-        <button className="w-full bg-brand-blue text-white font-bold py-3 rounded mt-4 hover:bg-blue-900 transition">
-          Login
+        <button 
+          disabled={loading}
+          className={`w-full text-white font-bold py-3 rounded mt-4 transition ${loading ? 'bg-gray-400' : 'bg-brand-blue hover:bg-blue-900'}`}
+        >
+          {loading ? 'Connecting...' : 'Login'}
         </button>
       </form>
     </AuthLayout>

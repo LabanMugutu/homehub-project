@@ -1,158 +1,202 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import DashboardLayout from '../../../layouts/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
-import DashboardLayout from '../../layouts/DashboardLayout';
-import UploadWidget from '../../components/UploadWidget'; // Reusing our widget
-import api from '../../api/axios'; // Connecting to Render Backend
-import { FaBuilding, FaMapMarkerAlt, FaMoneyBillWave, FaBed, FaBath, FaSave } from 'react-icons/fa';
+import api from '../../../api/axios';
+import { FaBuilding, FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined, FaMoneyBillWave, FaImage } from 'react-icons/fa';
 
 const AddProperty = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
-  // Form State
+  // --- 🔒 VERIFICATION CHECK ---
+  useEffect(() => {
+    // 1. Get user data from storage
+    const userString = localStorage.getItem('user');
+    const user = userString ? JSON.parse(userString) : null;
+    
+    // 2. Gatekeeper Logic: Redirect if Landlord is not Active
+    if (user && user.role === 'landlord' && user.status !== 'active') {
+      alert("⚠️ Account Not Verified!\n\nYou must upload your ID and be approved by an Admin before you can post properties.");
+      navigate('/dashboard/settings'); // Redirect to Settings/ID Upload
+    }
+  }, [navigate]);
+  // -----------------------------
+
   const [formData, setFormData] = useState({
     title: '',
-    location: '',
-    price: '',
     description: '',
-    image_url: '', // Will hold the Cloudinary URL
-    beds: 1,
-    baths: 1
+    address: '',
+    city: '',
+    state: '', // This will serve as "County" or Region
+    zip_code: '',
+    price: '',
+    bedrooms: '',
+    bathrooms: '',
+    square_feet: '',
+    property_type: 'apartment', // Default
+    amenities: '', // Comma separated string
+    image_url: '' // For now, we paste a URL. Later we can add file upload.
   });
 
-  // Handle Text Inputs
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle Image Upload Success
-  const handleImageUpload = (url) => {
-    setFormData({ ...formData, image_url: url });
-  };
-
-  // Submit to Backend
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Basic Validation
-    if (!formData.image_url) {
-      alert("Please upload a property image first.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      // POST request to https://homehub-backend-1.onrender.com/api/properties
-      await api.post('/properties', {
-        ...formData,
-        price: parseFloat(formData.price), // Ensure numbers are sent as numbers
-        beds: parseInt(formData.beds),
-        baths: parseInt(formData.baths)
-      });
-
+      // Create the property
+      await api.post('/properties', formData);
       alert("Property Listed Successfully!");
-      navigate('/landlord/properties'); // Go back to the list
+      navigate('/dashboard/landlord'); // Go back to dashboard
     } catch (error) {
-      console.error("Submission Error:", error);
-      alert("Failed to list property. " + (error.response?.data?.message || ""));
+      console.error("Error creating property:", error);
+      alert(error.response?.data?.error || "Failed to create property");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <DashboardLayout title="Add New Property">
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+    <DashboardLayout title="List New Property" role="landlord">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         
-        <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <FaBuilding className="text-brand-blue" /> Property Details
-        </h2>
+        <div className="bg-gray-50 px-8 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <FaBuilding className="text-brand-blue" /> Property Details
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">Fill in the information below to list your property.</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
           
-          {/* Title & Location */}
+          {/* Section 1: Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            <div className="col-span-2">
               <label className="block text-sm font-bold text-gray-700 mb-2">Property Title</label>
               <input 
-                type="text" name="title" required
-                placeholder="e.g. Sunset Apartments"
-                className="w-full border p-3 rounded focus:ring-2 focus:ring-brand-blue outline-none"
+                type="text" 
+                name="title" 
+                placeholder="e.g. Modern 2-Bedroom Apartment in Kilimani" 
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none"
                 onChange={handleChange}
+                required
               />
             </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-1">
-                <FaMapMarkerAlt /> Location
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+              <textarea 
+                name="description" 
+                rows="4" 
+                placeholder="Describe the property features, nearby amenities, etc."
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none"
+                onChange={handleChange}
+                required
+              ></textarea>
+            </div>
+          </div>
+
+          <hr className="border-gray-100" />
+
+          {/* Section 2: Location & Type */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-3">
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <FaMapMarkerAlt className="text-gray-400" /> Address
               </label>
               <input 
-                type="text" name="location" required
-                placeholder="e.g. Kilimani, Nairobi"
-                className="w-full border p-3 rounded focus:ring-2 focus:ring-brand-blue outline-none"
+                type="text" 
+                name="address" 
+                placeholder="Street Address" 
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none"
                 onChange={handleChange}
+                required
               />
             </div>
-          </div>
-
-          {/* Price & Description */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-1">
-              <FaMoneyBillWave /> Monthly Rent (Ksh)
-            </label>
-            <input 
-              type="number" name="price" required
-              placeholder="e.g. 45000"
-              className="w-full border p-3 rounded focus:ring-2 focus:ring-brand-blue outline-none"
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
-            <textarea 
-              name="description" rows="4" required
-              placeholder="Describe the amenities, nearby schools, etc."
-              className="w-full border p-3 rounded focus:ring-2 focus:ring-brand-blue outline-none"
-              onChange={handleChange}
-            ></textarea>
-          </div>
-
-          {/* Details (Beds/Baths) */}
-          <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-1"><FaBed /> Bedrooms</label>
-              <select name="beds" className="w-full border p-3 rounded bg-white" onChange={handleChange}>
-                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+              <label className="block text-sm font-bold text-gray-700 mb-2">City</label>
+              <input 
+                type="text" 
+                name="city" 
+                placeholder="Nairobi" 
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none"
+                onChange={handleChange}
+                required
+              />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-1"><FaBath /> Bathrooms</label>
-              <select name="baths" className="w-full border p-3 rounded bg-white" onChange={handleChange}>
-                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+              <label className="block text-sm font-bold text-gray-700 mb-2">County/State</label>
+              <input 
+                type="text" 
+                name="state" 
+                placeholder="Nairobi" 
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none"
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Property Type</label>
+              <select 
+                name="property_type" 
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none bg-white"
+                onChange={handleChange}
+              >
+                <option value="apartment">Apartment</option>
+                <option value="house">House</option>
+                <option value="studio">Studio</option>
+                <option value="villa">Villa</option>
+                <option value="office">Office Space</option>
               </select>
             </div>
           </div>
 
-          {/* Image Upload Section */}
-          <div className="border-t border-gray-100 pt-6">
-            <label className="block text-sm font-bold text-gray-700 mb-2">Property Image</label>
-            
-            {formData.image_url ? (
-              <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-300 group">
-                <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                  <UploadWidget onUpload={handleImageUpload} buttonText="Change Photo" />
-                </div>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-                <p className="text-gray-500 text-sm mb-4">Upload a high-quality image of the property.</p>
-                <div className="flex justify-center">
-                  <UploadWidget onUpload={handleImageUpload} buttonText="Upload Photo" />
-                </div>
-              </div>
-            )}
+          <hr className="border-gray-100" />
+
+          {/* Section 3: Specs & Price */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <FaBed className="text-gray-400" /> Bedrooms
+              </label>
+              <input type="number" name="bedrooms" className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none" onChange={handleChange} required />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <FaBath className="text-gray-400" /> Bathrooms
+              </label>
+              <input type="number" name="bathrooms" className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none" onChange={handleChange} required />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <FaRulerCombined className="text-gray-400" /> Sq. Ft
+              </label>
+              <input type="number" name="square_feet" className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none" onChange={handleChange} required />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <FaMoneyBillWave className="text-green-500" /> Rent (KES)
+              </label>
+              <input type="number" name="price" placeholder="e.g. 45000" className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none" onChange={handleChange} required />
+            </div>
+          </div>
+
+          {/* Section 4: Image URL (Temporary until Cloudinary) */}
+          <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <FaImage className="text-gray-400" /> Property Image URL
+              </label>
+              <input 
+                type="url" 
+                name="image_url" 
+                placeholder="Paste an image link (e.g. from Unsplash)" 
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none"
+                onChange={handleChange}
+              />
+              <p className="text-xs text-gray-400 mt-1">Leave blank to use default placeholder.</p>
           </div>
 
           {/* Submit Button */}
@@ -160,9 +204,9 @@ const AddProperty = () => {
             <button 
               type="submit" 
               disabled={loading}
-              className={`w-full text-white font-bold py-4 rounded-lg shadow-lg flex justify-center items-center gap-2 transition ${loading ? 'bg-gray-400' : 'bg-brand-blue hover:bg-blue-900'}`}
+              className={`w-full py-4 rounded-lg font-bold text-white text-lg transition shadow-lg ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-brand-blue hover:bg-blue-900 hover:shadow-xl'}`}
             >
-              {loading ? 'Saving Property...' : <><FaSave /> Publish Listing</>}
+              {loading ? 'Publishing...' : 'Publish Property Listing'}
             </button>
           </div>
 

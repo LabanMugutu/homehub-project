@@ -1,34 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { FaMapMarkerAlt, FaPlus, FaMoneyBillWave, FaTools, FaCheckCircle, FaExclamationCircle, FaClock } from 'react-icons/fa';
+import api from '../../api/axios'; // <--- Import the Real Backend Connector
+import { FaMapMarkerAlt, FaPlus, FaMoneyBillWave, FaTools, FaCheckCircle, FaExclamationCircle, FaClock, FaSpinner } from 'react-icons/fa';
 
 const Properties = () => {
-  // Mock Data: Properties with Income and Maintenance Issues included
-  const [properties] = useState([
-    {
-      id: 1,
-      title: "Sunshine Apartments",
-      location: "Kilimani, Nairobi",
-      image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80",
-      earnings: 135000, // Total earnings for this property
-      issues: [
-        { id: 101, title: "Broken Gate Lock", status: "Pending" },
-        { id: 102, title: "Leaking Roof", status: "Fixed" }
-      ]
-    },
-    {
-      id: 2,
-      title: "Green Valley Estate",
-      location: "Westlands, Nairobi",
-      image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80",
-      earnings: 85000,
-      issues: [
-        { id: 201, title: "No Water Pressure", status: "In Progress" }
-      ]
-    }
-  ]);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Helper function to color-code status
+  // FETCH REAL DATA FROM BACKEND
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        // This calls https://homehub-backend-1.onrender.com/api/properties
+        const res = await api.get('/properties'); 
+        setProperties(res.data); // Assuming backend returns an array of properties
+      } catch (err) {
+        console.error("Error fetching properties:", err);
+        setError("Could not load properties. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  // Helper for status colors (Same as before)
   const getStatusColor = (status) => {
     switch(status) {
       case 'Pending': return 'bg-red-100 text-red-600';
@@ -57,14 +55,42 @@ const Properties = () => {
         </button>
       </div>
 
-      {/* Property Cards */}
+      {/* Loading State */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+          <FaSpinner className="animate-spin text-4xl mb-4 text-brand-blue" />
+          <p>Loading your properties...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 text-center">
+          {error}
+        </div>
+      )}
+
+      {/* Empty State (Real but no data) */}
+      {!loading && !error && properties.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
+          <h3 className="text-xl font-bold text-gray-700">No Properties Found</h3>
+          <p className="text-gray-500 mb-4">You haven't listed any properties yet.</p>
+        </div>
+      )}
+
+      {/* Real Property Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {properties.map((prop) => (
           <div key={prop.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition">
             
-            {/* 1. Property Header (Image & Income) */}
+            {/* 1. Property Header */}
             <div className="flex h-40">
-              <img src={prop.image} alt={prop.title} className="w-1/3 object-cover" />
+              {/* Handle missing images with a fallback */}
+              <img 
+                src={prop.image_url || "https://via.placeholder.com/300x200?text=No+Image"} 
+                alt={prop.title} 
+                className="w-1/3 object-cover" 
+              />
               <div className="w-2/3 p-5 flex flex-col justify-between bg-gray-50">
                 <div>
                   <h3 className="font-bold text-lg text-gray-800">{prop.title}</h3>
@@ -73,21 +99,22 @@ const Properties = () => {
                   </p>
                 </div>
                 <div>
-                   <p className="text-xs text-gray-500 font-bold uppercase">Monthly Earnings</p>
+                   <p className="text-xs text-gray-500 font-bold uppercase">Monthly Rent</p>
                    <p className="text-2xl font-bold text-green-600 flex items-center gap-2">
-                     <FaMoneyBillWave /> Ksh {prop.earnings.toLocaleString()}
+                     <FaMoneyBillWave /> Ksh {prop.price ? prop.price.toLocaleString() : '0'}
                    </p>
                 </div>
               </div>
             </div>
 
-            {/* 2. Maintenance Status Section */}
+            {/* 2. Maintenance Status (If backend sends issues, map them here) */}
             <div className="p-5 border-t border-gray-100">
               <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                 <FaTools className="text-gray-400" /> Maintenance Status
               </h4>
               
-              {prop.issues.length > 0 ? (
+              {/* Check if 'issues' exists in the backend data */}
+              {prop.issues && prop.issues.length > 0 ? (
                 <div className="space-y-2">
                   {prop.issues.map((issue) => (
                     <div key={issue.id} className="flex justify-between items-center text-sm p-2 rounded bg-gray-50 border border-gray-100">

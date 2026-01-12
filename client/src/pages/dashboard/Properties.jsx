@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import api from '../../api/axios'; // <--- Import the Real Backend Connector
+import api from '../../api/axios'; 
+import { Link } from 'react-router-dom'; // <--- IMPORTED LINK
 import { FaMapMarkerAlt, FaPlus, FaMoneyBillWave, FaTools, FaCheckCircle, FaExclamationCircle, FaClock, FaSpinner } from 'react-icons/fa';
 
 const Properties = () => {
@@ -8,13 +9,12 @@ const Properties = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // FETCH REAL DATA FROM BACKEND
+  // FETCH REAL DATA
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        // This calls https://homehub-backend-1.onrender.com/api/properties
         const res = await api.get('/properties'); 
-        setProperties(res.data); // Assuming backend returns an array of properties
+        setProperties(res.data);
       } catch (err) {
         console.error("Error fetching properties:", err);
         setError("Could not load properties. Please try again.");
@@ -22,11 +22,10 @@ const Properties = () => {
         setLoading(false);
       }
     };
-
     fetchProperties();
   }, []);
 
-  // Helper for status colors (Same as before)
+  // Status Helpers
   const getStatusColor = (status) => {
     switch(status) {
       case 'Pending': return 'bg-red-100 text-red-600';
@@ -48,11 +47,14 @@ const Properties = () => {
   return (
     <DashboardLayout title="My Properties">
       
-      {/* Header Action */}
+      {/* --- HEADER WITH NAVIGATION LINK --- */}
       <div className="flex justify-end mb-6">
-        <button className="bg-brand-blue text-white px-6 py-2 rounded-lg flex items-center gap-2 font-bold hover:bg-blue-900 transition shadow-sm">
+        <Link 
+          to="/landlord/properties/add" 
+          className="bg-brand-blue text-white px-6 py-2 rounded-lg flex items-center gap-2 font-bold hover:bg-blue-900 transition shadow-sm"
+        >
           <FaPlus /> Add New Property
-        </button>
+        </Link>
       </div>
 
       {/* Loading State */}
@@ -70,11 +72,14 @@ const Properties = () => {
         </div>
       )}
 
-      {/* Empty State (Real but no data) */}
+      {/* Empty State */}
       {!loading && !error && properties.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
           <h3 className="text-xl font-bold text-gray-700">No Properties Found</h3>
           <p className="text-gray-500 mb-4">You haven't listed any properties yet.</p>
+          <Link to="/landlord/properties/add" className="text-brand-blue font-bold hover:underline">
+            Click here to list your first one
+          </Link>
         </div>
       )}
 
@@ -83,9 +88,7 @@ const Properties = () => {
         {properties.map((prop) => (
           <div key={prop.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition">
             
-            {/* 1. Property Header */}
             <div className="flex h-40">
-              {/* Handle missing images with a fallback */}
               <img 
                 src={prop.image_url || "https://via.placeholder.com/300x200?text=No+Image"} 
                 alt={prop.title} 
@@ -107,13 +110,11 @@ const Properties = () => {
               </div>
             </div>
 
-            {/* 2. Maintenance Status (If backend sends issues, map them here) */}
             <div className="p-5 border-t border-gray-100">
               <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                 <FaTools className="text-gray-400" /> Maintenance Status
               </h4>
               
-              {/* Check if 'issues' exists in the backend data */}
               {prop.issues && prop.issues.length > 0 ? (
                 <div className="space-y-2">
                   {prop.issues.map((issue) => (

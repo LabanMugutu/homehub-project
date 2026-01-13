@@ -1,134 +1,107 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import api from '../../api/axios';
-import { FaCheckCircle, FaTimesCircle, FaUserShield, FaSpinner, FaIdCard } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaBuilding, FaUserShield } from 'react-icons/fa';
 
 const AdminDashboard = () => {
-  const [users, setUsers] = useState([]);
+  const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Fetch All Users
-  const fetchUsers = async () => {
+  // Fetch ALL properties (The backend returns everything)
+  const fetchProperties = async () => {
     try {
-      const res = await api.get('/users'); // We might need to create this route in backend if it doesn't exist
-      setUsers(res.data);
+      const res = await api.get('/properties');
+      setProperties(res.data);
     } catch (error) {
-      console.error("Failed to load users", error);
+      console.error("Failed to load properties");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchProperties();
   }, []);
 
-  // 2. Handle Approval Logic
-  const handleVerify = async (userId, status) => {
-    if(!window.confirm(`Are you sure you want to ${status} this user?`)) return;
+  // Handle Approve/Reject Logic
+  const handleReview = async (id, action) => {
+    const endpoint = action === 'approve' ? 'approve' : 'reject';
+    if(!window.confirm(`Are you sure you want to ${action} this property?`)) return;
 
     try {
-      // Calls: PATCH /users/<id>/verify
-      await api.patch(`/users/${userId}/verify`, { status });
-      alert(`User ${status} successfully!`);
-      fetchUsers(); // Refresh list
+      await api.post(`/properties/${id}/${endpoint}`, { comment: `Admin ${action}ed` });
+      // Update UI instantly
+      setProperties(properties.map(p => 
+        p.id === id ? { ...p, status: action === 'approve' ? 'approved' : 'rejected' } : p
+      ));
+      alert(`Property ${action}d successfully!`);
     } catch (error) {
-      console.error("Verification failed", error);
-      alert("Failed to update status.");
+      alert("Action failed. Ensure you are logged in as Admin.");
     }
   };
 
+  // Filter for Pending items
+  const pendingProperties = properties.filter(p => p.status === 'pending');
+
   return (
-    <DashboardLayout title="Admin Overview" role="admin">
+    <DashboardLayout title="Admin Portal" role="admin">
       
-      {/* Stats Cards */}
+      {/* Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-           <h3 className="text-gray-500 text-sm font-bold uppercase">Total Users</h3>
-           <p className="text-3xl font-bold text-gray-800">{users.length}</p>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+          <div className="bg-blue-100 p-4 rounded-full text-brand-blue"><FaUserShield size={24}/></div>
+          <div><h3 className="text-2xl font-bold">Admin</h3><p className="text-gray-500">Super User</p></div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-           <h3 className="text-gray-500 text-sm font-bold uppercase">Pending Verifications</h3>
-           <p className="text-3xl font-bold text-orange-500">
-             {users.filter(u => u.role === 'landlord' && u.status === 'pending').length}
-           </p>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-           <h3 className="text-gray-500 text-sm font-bold uppercase">Verified Landlords</h3>
-           <p className="text-3xl font-bold text-green-600">
-             {users.filter(u => u.role === 'landlord' && u.status === 'active').length}
-           </p>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+          <div className="bg-yellow-100 p-4 rounded-full text-brand-gold"><FaBuilding size={24}/></div>
+          <div><h3 className="text-2xl font-bold">{pendingProperties.length}</h3><p className="text-gray-500">Pending Review</p></div>
         </div>
       </div>
 
-      {/* Verification Table */}
+      {/* Pending Approvals Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="font-bold text-gray-700 flex items-center gap-2">
-            <FaUserShield className="text-brand-blue" /> User Management
-          </h3>
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="font-bold text-gray-800">Pending Property Approvals</h2>
         </div>
-
-        {loading ? (
-          <div className="p-8 text-center text-gray-500"><FaSpinner className="animate-spin inline mr-2"/> Loading...</div>
+        
+        {pendingProperties.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">No properties pending review. Good job!</div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-xs uppercase">
-                <th className="px-6 py-3 font-bold">User</th>
-                <th className="px-6 py-3 font-bold">Role</th>
-                <th className="px-6 py-3 font-bold">ID Document</th>
-                <th className="px-6 py-3 font-bold">Status</th>
-                <th className="px-6 py-3 font-bold text-right">Actions</th>
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <tr>
+                <th className="px-6 py-3">Property</th>
+                <th className="px-6 py-3">Landlord</th>
+                <th className="px-6 py-3">Price</th>
+                <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {users.map(user => (
-                <tr key={user.id} className="hover:bg-gray-50 transition">
+              {pendingProperties.map(prop => (
+                <tr key={prop.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <p className="font-bold text-gray-800">{user.full_name}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="font-bold text-gray-800">{prop.title}</p>
+                    <p className="text-xs text-gray-500">{prop.city}</p>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.role === 'landlord' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {user.role}
-                    </span>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    ID: {prop.landlord_id.substring(0,8)}...
                   </td>
-                  <td className="px-6 py-4">
-                    {user.id_document ? (
-                      <a href={user.id_document} target="_blank" rel="noopener noreferrer" className="text-brand-blue font-bold text-xs hover:underline flex items-center gap-1">
-                        <FaIdCard /> View ID
-                      </a>
-                    ) : (
-                      <span className="text-gray-400 text-xs italic">Not Uploaded</span>
-                    )}
+                  <td className="px-6 py-4 font-bold text-gray-700">
+                    KES {prop.price?.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4">
-                    {user.status === 'active' ? (
-                      <span className="text-green-600 font-bold text-xs flex items-center gap-1"><FaCheckCircle/> Active</span>
-                    ) : (
-                       <span className="text-orange-500 font-bold text-xs flex items-center gap-1"><FaSpinner/> Pending</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {user.role === 'landlord' && user.status !== 'active' && (
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={() => handleVerify(user.id, 'active')}
-                          className="bg-green-100 text-green-700 p-2 rounded hover:bg-green-200 transition" 
-                          title="Approve"
-                        >
-                          <FaCheckCircle />
-                        </button>
-                        <button 
-                          onClick={() => handleVerify(user.id, 'rejected')}
-                          className="bg-red-100 text-red-700 p-2 rounded hover:bg-red-200 transition"
-                          title="Reject"
-                        >
-                          <FaTimesCircle />
-                        </button>
-                      </div>
-                    )}
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button 
+                      onClick={() => handleReview(prop.id, 'approve')}
+                      className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 font-bold text-sm"
+                    >
+                      Approve
+                    </button>
+                    <button 
+                      onClick={() => handleReview(prop.id, 'reject')}
+                      className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 font-bold text-sm"
+                    >
+                      Reject
+                    </button>
                   </td>
                 </tr>
               ))}

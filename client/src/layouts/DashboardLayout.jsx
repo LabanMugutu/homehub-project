@@ -1,90 +1,122 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { FaHome, FaBuilding, FaBell, FaUser, FaChartPie, FaSignOutAlt } from 'react-icons/fa';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
+import { 
+  FaHome, FaBuilding, FaClipboardList, FaTools, 
+  FaBell, FaCog, FaSignOutAlt, FaUserShield, FaUser
+} from 'react-icons/fa';
 
-const DashboardLayout = ({ children, title, role = 'landlord' }) => {
+const DashboardLayout = ({ children, title, role }) => {
   const navigate = useNavigate();
-  
-  // 1. Landlord Menu
-  const landlordMenu = [
-    { name: 'Dashboard', icon: <FaChartPie />, path: '/landlord/dashboard' },
-    { name: 'My Properties', icon: <FaBuilding />, path: '/landlord/properties' },
-    { name: 'Notifications', icon: <FaBell />, path: '/landlord/notifications' },
-    { name: 'Profile', icon: <FaUser />, path: '/landlord/profile' },
-  ];
+  // Get latest user data from storage
+  const user = JSON.parse(localStorage.getItem('user')) || { role: 'tenant', full_name: 'User' };
 
-  // 2. Tenant Menu
-  const tenantMenu = [
-    { name: 'My Dashboard', icon: <FaHome />, path: '/tenant/dashboard' },
-    { name: 'Find Property', icon: <FaBuilding />, path: '/marketplace' },
-    { name: 'Profile', icon: <FaUser />, path: '/landlord/profile' },
-  ];
-
-  // Select menu based on role
-  const menuItems = role === 'tenant' ? tenantMenu : landlordMenu;
-
-  // --- LOGOUT FUNCTION ---
   const handleLogout = () => {
-    // 1. Remove the token from storage
     localStorage.removeItem('token');
-    
-    // 2. Alert user (Optional)
-    // alert("You have been signed out.");
-
-    // 3. Redirect to Login Page
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
+  // --- 1. DEFINE LINKS PER ROLE (Strict Separation) ---
+  const links = {
+    admin: [
+      { label: 'Admin Overview', path: '/admin', icon: <FaUserShield /> }, 
+      { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> }, 
+      { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
+    ],
+    landlord: [
+      { label: 'Overview', path: '/dashboard', icon: <FaHome /> },
+      { label: 'My Properties', path: '/dashboard/landlord', icon: <FaBuilding /> }, // List of houses
+      { label: 'Lease Requests', path: '/dashboard/landlord/requests', icon: <FaClipboardList /> }, // Approvals
+      { label: 'Maintenance', path: '/dashboard/maintenance', icon: <FaTools /> },
+      { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> },
+      { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
+    ],
+    tenant: [
+      { label: 'Overview', path: '/dashboard', icon: <FaHome /> },
+      { label: 'My Applications', path: '/dashboard/applications', icon: <FaClipboardList /> },
+      { label: 'Maintenance', path: '/dashboard/maintenance', icon: <FaTools /> },
+      { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> },
+      { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
+    ]
+  };
+
+  // Select links based on the user's role
+  const currentLinks = links[user.role] || links.tenant;
+
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
-      {/* Sidebar */}
-      <div className="w-64 bg-brand-blue text-white flex flex-col shrink-0">
-        <div className="p-6 border-b border-blue-800">
-          <h1 className="text-2xl font-bold">🏠 HomeHub</h1>
-        </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      
+      {/* --- SIDEBAR SECTION --- */}
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-10">
         
-        <div className="p-6">
-          <p className="text-xs text-blue-200 uppercase font-bold mb-1">Signed in as</p>
-          <h2 className="text-xl font-bold capitalize">{role}</h2>
+        {/* Logo */}
+        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+          <Link to="/" className="text-xl font-extrabold text-brand-blue">HomeHub.</Link>
+          <span className="ml-2 text-[10px] uppercase bg-blue-50 text-brand-blue px-2 py-0.5 rounded border border-blue-100 font-bold">
+            {user.role}
+          </span>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-4 space-y-2">
-          {menuItems.map((item) => (
-            <NavLink 
-              key={item.name} 
-              to={item.path} 
-              className={({ isActive }) => 
-                `flex items-center gap-3 px-4 py-3 rounded transition-colors ${
-                  isActive ? 'bg-white/10 font-bold border-r-4 border-white' : 'text-blue-100 hover:bg-blue-800'
+        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+          {currentLinks.map((link) => (
+            <NavLink
+              key={link.path}
+              to={link.path}
+              end={link.path === '/dashboard' || link.path === '/admin'} // Exact match for home links
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors font-medium text-sm ${
+                  isActive 
+                    ? 'bg-brand-blue text-white shadow-md' 
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }
             >
-              {item.icon}<span>{item.name}</span>
+              {link.icon}
+              <span>{link.label}</span>
             </NavLink>
           ))}
         </nav>
 
-        {/* Sign Out Button (Bottom of Sidebar) */}
-        <div className="p-4 border-t border-blue-800">
+        {/* User & Logout */}
+        <div className="p-4 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3 mb-4 px-2">
+            <div className="bg-gray-200 p-2 rounded-full text-gray-500"><FaUser /></div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold text-gray-800 truncate">{user.full_name}</p>
+              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            </div>
+          </div>
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full text-left text-red-300 hover:bg-blue-900 hover:text-red-200 rounded transition-colors font-bold"
+            className="flex items-center justify-center gap-2 px-3 py-2 w-full bg-white border border-gray-200 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-bold shadow-sm"
           >
-            <FaSignOutAlt />
-            <span>Sign Out</span>
+            <FaSignOutAlt /> Logout
           </button>
         </div>
+      </aside>
 
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm py-4 px-8 flex justify-between items-center z-10">
-          <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+      {/* --- MAIN CONTENT SECTION --- */}
+      <main className="flex-1 ml-64 p-8">
+        {/* Header */}
+        <header className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage your {user.role} activities</p>
+          </div>
+          
+          {/* Quick Action Buttons could go here */}
+          <div className="flex gap-4">
+            <Link to="/" className="text-sm font-bold text-brand-blue hover:underline">
+              Go to Website &rarr;
+            </Link>
+          </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-8">{children}</main>
-      </div>
+
+        {/* Page Content */}
+        {children}
+      </main>
+
     </div>
   );
 };

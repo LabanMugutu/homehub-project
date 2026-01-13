@@ -1,79 +1,103 @@
 import React, { useState } from 'react';
-import AuthLayout from '../layouts/AuthLayout';
-import { useNavigate } from 'react-router-dom';
-import api from '../api/axios'; // <--- IMPORT THE NEW CONNECTOR
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/axios';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const Login = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+    setError(null);
+
     try {
-      // connecting to: https://homehub-backend-1.onrender.com/api/auth/login
       const res = await api.post('/auth/login', formData);
       
-      // 1. Save Token & User Details
-      localStorage.setItem('token', res.data.access_token); // Flask-JWT usually returns 'access_token'
-      localStorage.setItem('userName', res.data.user?.name || 'User');
-      localStorage.setItem('userRole', res.data.user?.role || 'tenant');
-      localStorage.setItem('userEmail', formData.email); 
-      
-      alert(`Login Successful! Welcome, ${res.data.user?.name || 'User'}`);
+      // 1. Save Token & User Data
+      localStorage.setItem('token', res.data.access_token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
 
-      // 2. Redirect based on Role
-      const role = res.data.user?.role;
-      if (role === 'landlord') {
-        navigate('/landlord/dashboard');
-      } else if (role === 'admin') {
-        navigate('/admin');
+      // 2. 🚨 SMART REDIRECT LOGIC 🚨
+      const role = res.data.user.role;
+      
+      if (role === 'admin') {
+        navigate('/admin'); // Admins go to Admin Panel
       } else {
-        navigate('/tenant/dashboard'); 
+        navigate('/dashboard'); // Landlords & Tenants go to Dashboard
       }
 
-    } catch (error) {
-      console.error("Login Error:", error);
-      // Show the exact error message from the backend if available
-      const message = error.response?.data?.message || "Invalid credentials or Server Error";
-      alert(message);
+    } catch (err) {
+      setError(err.response?.data?.error || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthLayout 
-      imageSrc="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80" 
-      title="Welcome Back" 
-      subtitle="Login to your dashboard."
-    >
-      <h2 className="text-3xl font-bold text-brand-blue mb-6">Login</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input 
-          type="email" 
-          placeholder="Email" 
-          className="w-full px-4 py-3 rounded border focus:outline-none focus:ring-2 focus:ring-brand-blue" 
-          onChange={e => setFormData({...formData, email: e.target.value})} 
-          required
-        />
-        <input 
-          type="password" 
-          placeholder="Password" 
-          className="w-full px-4 py-3 rounded border focus:outline-none focus:ring-2 focus:ring-brand-blue" 
-          onChange={e => setFormData({...formData, password: e.target.value})} 
-          required
-        />
-        <button 
-          disabled={loading}
-          className={`w-full text-white font-bold py-3 rounded mt-4 transition ${loading ? 'bg-gray-400' : 'bg-brand-blue hover:bg-blue-900'}`}
-        >
-          {loading ? 'Connecting...' : 'Login'}
-        </button>
-      </form>
-    </AuthLayout>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800">Welcome Back</h2>
+            <p className="text-gray-500 mt-2">Login to manage your account</p>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm text-center border border-red-200">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
+              <input 
+                type="email" 
+                name="email" 
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none"
+                placeholder="name@example.com"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Password</label>
+              <input 
+                type="password" 
+                name="password" 
+                className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-brand-blue outline-none"
+                placeholder="••••••••"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <button 
+              disabled={loading}
+              className="w-full bg-brand-blue text-white font-bold py-3 rounded-lg hover:bg-blue-900 transition shadow-md"
+            >
+              {loading ? 'Logging In...' : 'Login'}
+            </button>
+          </form>
+
+          <p className="text-center mt-6 text-gray-600">
+            Don't have an account? <Link to="/register" className="text-brand-blue font-bold hover:underline">Register</Link>
+          </p>
+        </div>
+      </div>
+      <Footer />
+    </div>
   );
 };
 

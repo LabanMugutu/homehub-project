@@ -1,137 +1,170 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import { FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined, FaCheckCircle, FaMoneyBillWave } from 'react-icons/fa';
+import { 
+  FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined, 
+  FaUserCircle, FaPhone, FaEnvelope, FaFileSignature, FaCheckCircle
+} from 'react-icons/fa';
 
 const PropertyDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [applying, setApplying] = useState(false);
+  const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
-    const fetchProperty = async () => {
-      try {
-        const res = await api.get(`/properties/${id}`);
-        setProperty(res.data);
-      } catch (err) {
-        console.error("Error fetching property:", err);
-        setError("Could not load property details.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProperty();
+    api.get(`/properties/${id}`)
+      .then(res => setProperty(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="text-center py-20">Loading...</div>;
-  if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
-  if (!property) return <div className="text-center py-20">Property not found</div>;
+  const handleLeaseNow = async () => {
+    if (!user) return navigate('/login');
+    if (user.role !== 'tenant') return alert("Only tenants can apply for leases.");
+    
+    if (!window.confirm(`Start Lease Process for ${property.title}?\n\nThis will send a direct application to the landlord.`)) return;
+
+    setApplying(true);
+    try {
+      // 🚀 Send Application
+      await api.post('/leases', { property_id: property.id });
+      
+      alert("✅ Application Sent!\n\nThe landlord has been notified. Check 'My Applications' for updates.");
+      navigate('/dashboard/applications');
+    } catch (error) {
+      alert(error.response?.data?.error || "Application failed. You may already have a pending request.");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  if (loading) return <div className="p-20 text-center">Loading property...</div>;
+  if (!property) return <div className="p-20 text-center">Property not found.</div>;
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-
-      {/* Hero Image Section */}
-      <div className="relative h-[60vh] bg-gray-900">
+      
+      {/* Hero Image */}
+      <div className="h-96 w-full bg-gray-300 relative">
         <img 
-          src={property.image_url || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80"} 
+          src={property.image_url || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"} 
           alt={property.title} 
-          className="w-full h-full object-cover opacity-80"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
-          <div className="max-w-6xl mx-auto text-white">
-            <span className="bg-brand-blue px-3 py-1 rounded text-xs font-bold uppercase tracking-wide mb-2 inline-block">
-              {property.property_type}
-            </span>
-            <h1 className="text-4xl md:text-5xl font-bold mb-2">{property.title}</h1>
-            <p className="text-xl flex items-center gap-2 text-gray-200">
-              <FaMapMarkerAlt className="text-brand-gold" /> {property.address}, {property.city}
-            </p>
+        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-end">
+          <div className="container mx-auto px-6 py-8 text-white">
+            <h1 className="text-4xl font-bold mb-2">{property.title}</h1>
+            <p className="flex items-center gap-2 text-lg"><FaMapMarkerAlt /> {property.address}, {property.city}</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8 w-full -mt-20 relative z-10">
+      <div className="container mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Details */}
+        {/* Main Details */}
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* Key Stats Card */}
-          <div className="bg-white rounded-xl shadow-sm p-8 flex justify-between items-center text-center">
-             <div>
-               <p className="text-gray-400 text-sm uppercase font-bold">Price</p>
-               <p className="text-2xl font-bold text-brand-blue">KES {property.price?.toLocaleString()}</p>
-             </div>
-             <div className="h-10 w-px bg-gray-200"></div>
-             <div>
-               <p className="text-gray-400 text-sm uppercase font-bold">Bedrooms</p>
-               <p className="text-xl font-bold text-gray-800 flex items-center justify-center gap-2"><FaBed/> {property.bedrooms}</p>
-             </div>
-             <div className="h-10 w-px bg-gray-200"></div>
-             <div>
-               <p className="text-gray-400 text-sm uppercase font-bold">Bathrooms</p>
-               <p className="text-xl font-bold text-gray-800 flex items-center justify-center gap-2"><FaBath/> {property.bathrooms}</p>
-             </div>
-             <div className="h-10 w-px bg-gray-200 hidden md:block"></div>
-             <div className="hidden md:block">
-               <p className="text-gray-400 text-sm uppercase font-bold">Size</p>
-               <p className="text-xl font-bold text-gray-800 flex items-center justify-center gap-2"><FaRulerCombined/> {property.square_feet} sqft</p>
-             </div>
-          </div>
-
-          {/* Description */}
-          <div className="bg-white rounded-xl shadow-sm p-8">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">About this Property</h3>
-            <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-              {property.description}
-            </p>
-          </div>
-
-          {/* Amenities */}
-          <div className="bg-white rounded-xl shadow-sm p-8">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Amenities</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {property.amenities ? property.amenities.split(',').map((amenity, index) => (
-                <div key={index} className="flex items-center gap-2 text-gray-600">
-                  <FaCheckCircle className="text-green-500 flex-shrink-0" />
-                  <span>{amenity.trim()}</span>
+          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Overview</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-bold flex items-center gap-1">
+                    <FaCheckCircle /> Verified Listing
+                  </span>
+                  <span className="text-gray-500 capitalize">• {property.property_type}</span>
                 </div>
-              )) : <p className="text-gray-400 italic">No specific amenities listed.</p>}
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-brand-blue">${property.price?.toLocaleString()}/mo</p>
+                <p className="text-sm text-gray-500">Utilities included</p>
+              </div>
             </div>
+
+            <div className="grid grid-cols-3 gap-4 py-6 border-y border-gray-100 mb-6">
+              <div className="flex items-center gap-3 text-gray-600">
+                <div className="bg-blue-50 p-3 rounded-full text-brand-blue"><FaBed /></div>
+                <div><span className="block font-bold text-gray-800">{property.bedrooms || '-'}</span> Bedrooms</div>
+              </div>
+              <div className="flex items-center gap-3 text-gray-600">
+                <div className="bg-blue-50 p-3 rounded-full text-brand-blue"><FaBath /></div>
+                <div><span className="block font-bold text-gray-800">{property.bathrooms || '-'}</span> Bathrooms</div>
+              </div>
+              <div className="flex items-center gap-3 text-gray-600">
+                <div className="bg-blue-50 p-3 rounded-full text-brand-blue"><FaRulerCombined /></div>
+                <div><span className="block font-bold text-gray-800">{property.square_feet || 'N/A'}</span> sq ft</div>
+              </div>
+            </div>
+
+            <h3 className="font-bold text-gray-800 mb-4">Description</h3>
+            <p className="text-gray-600 leading-relaxed">{property.description}</p>
           </div>
         </div>
 
-        {/* Right Column: Action Box */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24 border border-gray-100">
-            <div className="text-center mb-6">
-              <p className="text-sm text-gray-500">Monthly Rent</p>
-              <h2 className="text-3xl font-bold text-brand-blue">KES {property.price?.toLocaleString()}</h2>
+        {/* Sidebar: Actions */}
+        <div className="space-y-6">
+          
+          {/* Landlord Contact */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <FaUserCircle className="text-brand-blue" /> Property Manager
+            </h3>
+            <div className="flex items-center gap-4 mb-4">
+               <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-500">
+                 {property.landlord_name ? property.landlord_name.charAt(0) : "L"}
+               </div>
+               <div>
+                 <p className="font-bold text-gray-800">{property.landlord_name || "Private Landlord"}</p>
+                 <p className="text-xs text-green-600 font-bold flex items-center gap-1">
+                   <FaCheckCircle /> Identity Verified
+                 </p>
+               </div>
             </div>
-            
-            <button 
-              onClick={() => alert("Lease Application Feature Coming Soon!")}
-              className="w-full bg-brand-gold text-brand-blue font-bold py-4 rounded-lg hover:bg-yellow-400 transition mb-4 shadow-md"
-            >
-              Apply Now
-            </button>
-            
-            <button className="w-full border-2 border-brand-blue text-brand-blue font-bold py-3 rounded-lg hover:bg-blue-50 transition">
-              Schedule Viewing
-            </button>
-
-            <p className="text-xs text-gray-400 text-center mt-4">
-              Protected by HomeHub SafeRent Guarantee.
-            </p>
+            <div className="space-y-2 text-sm">
+               <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
+                 <FaPhone /> <span>{property.landlord_phone || "No phone listed"}</span>
+               </div>
+               <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
+                 <FaEnvelope /> <span className="truncate">{property.landlord_email || "No email listed"}</span>
+               </div>
+            </div>
           </div>
-        </div>
 
+          {/* 🚀 LEASE ACTION CARD */}
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-brand-blue/20 sticky top-24">
+            <h3 className="font-bold text-gray-800 mb-2">Ready to move in?</h3>
+            <p className="text-sm text-gray-500 mb-4">Skip the viewing and apply for a lease directly.</p>
+            
+            <div className="flex flex-col gap-3">
+              {user && user.role === 'tenant' ? (
+                <button 
+                  onClick={handleLeaseNow}
+                  disabled={applying}
+                  className="w-full py-4 bg-brand-blue text-white font-bold rounded-lg hover:bg-blue-900 transition flex justify-center items-center gap-2 shadow-md"
+                >
+                  {applying ? "Sending..." : <><FaFileSignature /> Lease Now</>}
+                </button>
+              ) : !user ? (
+                <button onClick={() => navigate('/login')} className="w-full py-3 bg-gray-800 text-white rounded-lg">
+                  Login to Lease
+                </button>
+              ) : null}
+
+              <button 
+                onClick={() => alert("Tour booking feature coming soon!")}
+                className="w-full py-3 border border-gray-300 text-gray-600 font-bold rounded-lg hover:bg-gray-50 transition"
+              >
+                Schedule Viewing
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
-      <Footer />
     </div>
   );
 };

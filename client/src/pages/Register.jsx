@@ -1,121 +1,143 @@
 import React, { useState } from 'react';
-import AuthLayout from '../layouts/AuthLayout';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const Register = () => {
   const navigate = useNavigate();
-  const [role, setRole] = useState('tenant'); // Default role
   const [formData, setFormData] = useState({
-    username: '',
+    full_name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    role: 'tenant',
+    phone: '',
+    admin_secret: '' // 👈 The new field for the key
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // 1. Basic Validation
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-
     setLoading(true);
+    setError(null);
 
     try {
-      // 2. Send Data to Backend
-      // FIXED: Backend expects 'full_name', not 'username'
-      const res = await api.post('/auth/register', {
-        full_name: formData.username, // <--- THIS WAS THE FIX
-        email: formData.email,
-        password: formData.password,
-        role: role
-      });
-
-      // 3. Success!
+      await api.post('/auth/register', formData);
       alert("Registration Successful! Please Login.");
       navigate('/login');
-
-    } catch (error) {
-      console.error("Registration Error:", error);
-      
-      // Show the exact error message from the backend
-      const message = error.response?.data?.error || "Registration Failed. Please check your internet.";
-      alert(message);
+    } catch (err) {
+      setError(err.response?.data?.error || "Registration failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthLayout 
-      imageSrc="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80" 
-      title="Create Account" 
-      subtitle="Join HomeHub today."
-    >
-      {/* Role Selection Tabs */}
-      <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
-        <button 
-          className={`flex-1 py-2 rounded-md text-sm font-bold transition ${role === 'tenant' ? 'bg-white shadow-sm text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
-          onClick={() => setRole('tenant')}
-          type="button"
-        >
-          Tenant
-        </button>
-        <button 
-          className={`flex-1 py-2 rounded-md text-sm font-bold transition ${role === 'landlord' ? 'bg-white shadow-sm text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
-          onClick={() => setRole('landlord')}
-          type="button"
-        >
-          Landlord
-        </button>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
+            <p className="text-gray-500 mt-2">Join HomeHub today</p>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-center border border-red-200">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
+              <input 
+                type="text" 
+                name="full_name" 
+                required 
+                className="w-full px-4 py-2 rounded border focus:ring-2 focus:ring-brand-blue outline-none" 
+                onChange={handleChange} 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Email Address</label>
+              <input 
+                type="email" 
+                name="email" 
+                required 
+                className="w-full px-4 py-2 rounded border focus:ring-2 focus:ring-brand-blue outline-none" 
+                onChange={handleChange} 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Phone Number</label>
+              <input 
+                type="text" 
+                name="phone" 
+                required 
+                className="w-full px-4 py-2 rounded border focus:ring-2 focus:ring-brand-blue outline-none" 
+                onChange={handleChange} 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Password</label>
+              <input 
+                type="password" 
+                name="password" 
+                required 
+                className="w-full px-4 py-2 rounded border focus:ring-2 focus:ring-brand-blue outline-none" 
+                onChange={handleChange} 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">I am a:</label>
+              <select 
+                name="role" 
+                className="w-full px-4 py-2 rounded border focus:ring-2 focus:ring-brand-blue outline-none bg-white" 
+                onChange={handleChange}
+              >
+                <option value="tenant">Tenant (Looking for a home)</option>
+                <option value="landlord">Landlord (Listing a home)</option>
+              </select>
+            </div>
+
+            {/* --- 🔐 ADMIN SECRET FIELD --- */}
+            <div className="pt-6 border-t border-gray-100 mt-4">
+              <label className="block text-xs font-bold text-gray-400 mb-1">Admin Key (Staff Only)</label>
+              <input 
+                type="text" 
+                name="admin_secret" 
+                placeholder="Enter key to register as Admin" 
+                className="w-full px-4 py-2 rounded border border-gray-200 text-sm focus:ring-2 focus:ring-gray-400 outline-none" 
+                onChange={handleChange} 
+              />
+            </div>
+            {/* ----------------------------- */}
+
+            <button 
+              disabled={loading} 
+              className="w-full bg-brand-blue text-white font-bold py-3 rounded-lg hover:bg-blue-900 transition mt-6 shadow-md"
+            >
+              {loading ? 'Creating Account...' : 'Register'}
+            </button>
+          </form>
+
+          <p className="text-center mt-6 text-gray-600">
+            Already have an account? <Link to="/login" className="text-brand-blue font-bold hover:underline">Login</Link>
+          </p>
+        </div>
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input 
-          type="text" 
-          placeholder="Full Name" 
-          className="w-full px-4 py-3 rounded border focus:outline-none focus:ring-2 focus:ring-brand-blue"
-          onChange={e => setFormData({...formData, username: e.target.value})}
-          required 
-        />
-        <input 
-          type="email" 
-          placeholder="Email Address" 
-          className="w-full px-4 py-3 rounded border focus:outline-none focus:ring-2 focus:ring-brand-blue"
-          onChange={e => setFormData({...formData, email: e.target.value})}
-          required 
-        />
-        <input 
-          type="password" 
-          placeholder="Password" 
-          className="w-full px-4 py-3 rounded border focus:outline-none focus:ring-2 focus:ring-brand-blue"
-          onChange={e => setFormData({...formData, password: e.target.value})}
-          required 
-        />
-        <input 
-          type="password" 
-          placeholder="Confirm Password" 
-          className="w-full px-4 py-3 rounded border focus:outline-none focus:ring-2 focus:ring-brand-blue"
-          onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
-          required 
-        />
-        
-        <button 
-          disabled={loading}
-          className={`w-full text-white font-bold py-3 rounded mt-4 transition ${loading ? 'bg-gray-400' : 'bg-brand-blue hover:bg-blue-900'}`}
-        >
-          {loading ? 'Creating Account...' : 'Register'}
-        </button>
-      </form>
-
-      <p className="text-center mt-6 text-gray-600">
-        Already have an account? <Link to="/login" className="text-brand-blue font-bold hover:underline">Login here</Link>
-      </p>
-    </AuthLayout>
+      <Footer />
+    </div>
   );
 };
 

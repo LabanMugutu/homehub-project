@@ -1,47 +1,87 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-// Pages
-import LandingPage from './pages/LandingPage';
+// --- 1. Layouts & Components ---
+import ScrollToTop from './components/ScrollToTop';
+
+// --- 2. Pages: Public ---
+import Home from './pages/Home';
+import Marketplace from './pages/Marketplace';
+import PropertyDetails from './pages/PropertyDetails';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Marketplace from './pages/Marketplace'; // NEW
 
-// Landlord Pages
-import LandlordOverview from './pages/dashboard/LandlordOverview';
-import LandlordNotifications from './pages/dashboard/LandlordNotifications'; // NEW
-import Properties from './pages/dashboard/Properties';
-import Profile from './pages/dashboard/Profile';
+// --- 3. Pages: Dashboard (Core) ---
+import DashboardHome from './pages/dashboard/DashboardHome';
+import Settings from './pages/dashboard/Settings';
+import Notifications from './pages/dashboard/Notifications';
+import Applications from './pages/dashboard/Applications'; // Tenant Lease View
+import Maintenance from './pages/dashboard/Maintenance';   // 👈 NEW: Maintenance Page
 
-// Tenant Pages
-import TenantDashboard from './pages/dashboard/TenantDashboard'; // NEW
+// --- 4. Pages: Landlord Specific ---
+import AddProperty from './pages/dashboard/landlord/AddProperty';
+import MyProperties from './pages/dashboard/landlord/MyProperties';
+import LeaseRequests from './pages/dashboard/landlord/LeaseRequests'; // Landlord Lease View
 
-// Admin Pages
+// --- 5. Pages: Admin Specific ---
 import AdminDashboard from './pages/dashboard/AdminDashboard';
+
+// --- 6. PLACEHOLDER COMPONENT ---
+// Keeps the app from crashing on tabs we haven't built yet (Payments, Messages)
+const ComingSoon = ({ title }) => (
+  <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
+    <h1 className="text-4xl font-bold text-gray-800 mb-4">🚧 {title}</h1>
+    <p className="text-gray-600 mb-8">This feature is currently under development.</p>
+    <a href="/dashboard" className="bg-brand-blue text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-900 transition">
+      Back to Dashboard
+    </a>
+  </div>
+);
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
+        {/* ================= PUBLIC ROUTES ================= */}
+        <Route path="/" element={<Home />} />
+        <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/properties" element={<Marketplace />} />
+        <Route path="/properties/:id" element={<PropertyDetails />} />
+        
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/marketplace" element={<Marketplace />} /> {/* View Properties Tab */}
+
+        {/* ================= DASHBOARD ROUTES ================= */}
         
-        {/* Landlord Routes */}
-        <Route path="/landlord/dashboard" element={<LandlordOverview />} />
-        <Route path="/landlord/notifications" element={<LandlordNotifications />} />
-        <Route path="/landlord/properties" element={<Properties />} />
-        <Route path="/landlord/profile" element={<Profile />} />
+        {/* 1. Common Dashboard Pages */}
+        <Route path="/dashboard" element={<DashboardHome />} />
+        <Route path="/dashboard/settings" element={<Settings />} />
+        <Route path="/dashboard/notifications" element={<Notifications />} />
         
-        {/* Tenant Routes */}
-        <Route path="/tenant/dashboard" element={<TenantDashboard />} />
+        {/* ✅ NEW: Maintenance (Shared by Tenant & Landlord) */}
+        <Route path="/dashboard/maintenance" element={<Maintenance />} />
+
+        {/* 2. Tenant Routes */}
+        <Route path="/dashboard/applications" element={<Applications />} />
+        <Route path="/dashboard/favorites" element={<ComingSoon title="Saved Homes" />} />
+
+        {/* 3. Landlord Routes */}
+        <Route path="/dashboard/landlord" element={<MyProperties />} />
+        <Route path="/dashboard/landlord/add" element={<AddProperty />} />
+        <Route path="/dashboard/landlord/requests" element={<LeaseRequests />} />
         
-        {/* Admin Routes */}
+        {/* 4. Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
-        
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="/dashboard/admin" element={<AdminDashboard />} />
+
+        {/* ================= PENDING FEATURES ================= */}
+        {/* These remaining placeholders will be replaced as we build them */}
+        <Route path="/dashboard/payments" element={<ComingSoon title="Payments & Invoices" />} />
+        <Route path="/dashboard/messages" element={<ComingSoon title="Messages" />} />
+
+        {/* ================= CATCH-ALL ================= */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

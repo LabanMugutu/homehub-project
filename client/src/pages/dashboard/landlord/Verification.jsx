@@ -5,9 +5,8 @@ import { useNavigate } from 'react-router-dom';
 const Verification = () => {
   const navigate = useNavigate();
   
-  // 1. REFS: These act as the "remote control" for the hidden file inputs
+  // 1. CREATE THE REFS (The "Remote Controls")
   const idInputRef = useRef(null);
-  const kraInputRef = useRef(null);
 
   // State
   const [formData, setFormData] = useState({
@@ -22,15 +21,18 @@ const Verification = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 2. CLICK HANDLERS: These trigger the hidden inputs
+  // 2. THE CLICK HANDLER (The "Trigger")
+  // When you click the Div, this function runs and clicks the hidden input
   const handleIdClick = () => {
-    idInputRef.current.click();
+    if (idInputRef.current) {
+      idInputRef.current.click();
+    }
   };
   
   // Handle File Selection
-  const handleFileChange = (e, setFile) => {
+  const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      setIdFile(e.target.files[0]);
     }
   };
 
@@ -42,13 +44,11 @@ const Verification = () => {
     data.append('national_id', formData.national_id);
     data.append('kra_pin', formData.kra_pin);
     if (idFile) data.append('document', idFile);
-    // If you need KRA cert upload too, append it here as well
 
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const token = localStorage.getItem('token');
 
-      // We need a specific endpoint for verification uploads
       await axios.post(`${API_URL}/api/users/verify-upload`, data, {
         headers: { 
           'Content-Type': 'multipart/form-data',
@@ -56,7 +56,7 @@ const Verification = () => {
         }
       });
 
-      alert("Documents uploaded! Admin will review shortly.");
+      alert("Documents uploaded! Please log out and log back in.");
       navigate('/dashboard/landlord');
 
     } catch (error) {
@@ -72,73 +72,48 @@ const Verification = () => {
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-extrabold text-gray-900">Landlord Verification</h2>
-          <p className="mt-2 text-gray-600">We need a few details to activate your account.</p>
+          <p className="mt-2 text-gray-600">Complete your profile to add properties.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* National ID Number */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">National ID Number</label>
-            <input 
-              name="national_id" 
-              type="text" 
-              required
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
-              onChange={handleChange}
-            />
+            <label className="block text-sm font-medium text-gray-700">National ID</label>
+            <input name="national_id" type="text" onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-3" required />
           </div>
 
-          {/* KRA PIN */}
           <div>
             <label className="block text-sm font-medium text-gray-700">KRA PIN</label>
-            <input 
-              name="kra_pin" 
-              type="text" 
-              required
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
-              onChange={handleChange}
-            />
+            <input name="kra_pin" type="text" onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded p-3" required />
           </div>
 
-          {/* UPLOAD SECTION */}
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Upload ID / Passport Copy</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Upload ID Document</label>
             
-            {/* 3. THE MAGIC CLICKABLE AREA */}
+            {/* 3. THE VISIBLE CLICKABLE BOX */}
             <div 
-              onClick={handleIdClick} // 👈 This makes the div clickable
+              onClick={handleIdClick} // 👈 Clicking this triggers the function above
               className="border-2 border-dashed border-blue-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition"
             >
-              <svg className="h-12 w-12 text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
               <span className="text-blue-600 font-medium">Browse here</span>
               <span className="text-gray-400 text-sm mt-1">or drop file here</span>
             </div>
 
-            {/* 4. THE HIDDEN INPUT (Actual Worker) */}
+            {/* 4. THE HIDDEN INPUT */}
             <input 
               type="file" 
-              ref={idInputRef} // 👈 Linked to the ref
-              className="hidden" // 👈 Hidden from view
-              onChange={(e) => handleFileChange(e, setIdFile)}
+              ref={idInputRef} // 👈 This connects it to the Ref
+              className="hidden" // 👈 It stays hidden
+              onChange={handleFileChange}
               accept="image/*,.pdf"
             />
 
-            {/* File Preview */}
             {idFile && (
-              <div className="mt-2 text-sm text-green-600 flex items-center gap-2">
-                ✅ Selected: <span className="font-semibold">{idFile.name}</span>
-              </div>
+              <div className="mt-2 text-sm text-green-600">✅ Selected: {idFile.name}</div>
             )}
           </div>
 
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
-          >
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700">
             {loading ? 'Uploading...' : 'Submit Verification'}
           </button>
         </form>

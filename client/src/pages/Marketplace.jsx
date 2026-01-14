@@ -1,57 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // 👈 Import Navigation
 
 const Marketplace = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const navigate = useNavigate(); // 👈 Initialize Hook
 
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        // 1. Get the Base URL (e.g., https://homehub-api.onrender.com)
         let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        
-        // Remove trailing slash if present to avoid double slashes
-        if (API_URL.endsWith('/')) {
-            API_URL = API_URL.slice(0, -1);
-        }
+        if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
 
-        console.log("Fetching from:", `${API_URL}/api/properties`); // Debug log
-
-        // 2. THE FIX: Add '/api' before '/properties'
         const response = await axios.get(`${API_URL}/api/properties`);
         
-        console.log("Data received:", response.data); // Debug log
-        setProperties(response.data);
+        // 1. FILTER: Only show "Available" properties for tenants
+        const approvedProperties = response.data.filter(p => p.status === 'Available');
+        
+        setProperties(approvedProperties);
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching properties:", err);
-        setError("Failed to load properties. Please try again.");
+        console.error("Error:", err);
+        setError("Failed to load properties.");
         setLoading(false);
       }
     };
-
     fetchProperties();
   }, []);
 
-  // ... (Keep the rest of your render code exactly the same)
-  
+  // Filter by Search Term
   const filteredProperties = properties.filter(property =>
     property.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     property.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) return <div className="p-10 text-center">Loading Marketplace...</div>;
-  if (error) return <div className="p-10 text-center text-red-500">{error}</div>;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Marketplace</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Available Properties</h1>
         
-        {/* Search Bar */}
+        {/* Search */}
         <div className="mb-8">
           <input
             type="text"
@@ -62,13 +56,13 @@ const Marketplace = () => {
           />
         </div>
 
-        {/* Properties Grid */}
+        {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProperties.map((property) => (
             <div key={property.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               
               <img 
-                src={property.image_url || "https://via.placeholder.com/400x300?text=No+Image"} 
+                src={property.image_url || "https://via.placeholder.com/400x300"} 
                 alt={property.name} 
                 className="w-full h-48 object-cover"
               />
@@ -76,7 +70,7 @@ const Marketplace = () => {
               <div className="p-4">
                 <div className="flex justify-between items-start">
                   <h3 className="text-xl font-semibold text-gray-900">{property.name}</h3>
-                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
                     {property.status}
                   </span>
                 </div>
@@ -88,21 +82,23 @@ const Marketplace = () => {
                     ${property.price} <span className="text-sm font-normal text-gray-500">/mo</span>
                   </span>
                 </div>
-                 <div className="mt-3 flex gap-2 text-sm text-gray-500">
-                   <span>🛏️ {property.bedrooms} Bed</span>
-                   <span>🚿 {property.bathrooms} Bath</span>
+
+                <div className="mt-3 flex gap-4 text-sm text-gray-500">
+                   <span>🛏️ {property.bedrooms} Beds</span>
+                   <span>🚿 {property.bathrooms} Baths</span>
                 </div>
-                <button className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+
+                {/* 2. CLICK ACTION: Navigate to Details Page */}
+                <button 
+                  onClick={() => navigate(`/properties/${property.id}`)}
+                  className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+                >
                   View Details
                 </button>
               </div>
             </div>
           ))}
         </div>
-        
-        {filteredProperties.length === 0 && (
-           <p className="text-center text-gray-500 mt-10">No properties found.</p>
-        )}
       </div>
     </div>
   );

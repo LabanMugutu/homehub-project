@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import DashboardLayout from '../../layouts/DashboardLayout'; // 🟢 CRITICAL: Imports your App's Layout
 import api from '../../api/axios';
 import { 
-  FaHome, FaClock, FaCheckCircle, FaTimesCircle, 
-  FaSpinner, FaSearch, FaMapMarkerAlt, FaMoneyBillWave 
+  FaHome, FaSearch, FaCalendarAlt, FaMoneyBillWave, 
+  FaCheckCircle, FaClock, FaTimesCircle, FaMapMarkerAlt 
 } from 'react-icons/fa';
 
 const Applications = () => {
@@ -10,10 +11,8 @@ const Applications = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🟢 FETCH DATA
     api.get('/leases')
       .then(res => {
-        // Robust handling for different data shapes
         if (Array.isArray(res.data)) {
           setLeases(res.data);
         } else if (res.data && Array.isArray(res.data.leases)) {
@@ -26,112 +25,142 @@ const Applications = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 text-gray-400">
-        <FaSpinner className="animate-spin text-4xl mb-4 text-blue-600" />
-        <p className="font-medium animate-pulse">Syncing your applications...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between md:items-end border-b border-gray-200 pb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Applications</h1>
-          <p className="text-gray-500 mt-2">Track and manage your rental requests in real-time.</p>
+    // 🟢 WRAPPER: Matches the sidebar/header structure of TenantDashboard
+    <DashboardLayout title="My Applications" role="tenant">
+      
+      {/* 1. Header Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-gray-500 text-sm font-medium">Total Applications</p>
+            <h2 className="text-3xl font-bold text-gray-800">{leases.length}</h2>
+          </div>
+          <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
+            <FaHome className="text-xl" />
+          </div>
         </div>
-        <div className="bg-blue-50 text-blue-700 px-5 py-2 rounded-full text-sm font-bold shadow-sm border border-blue-100">
-          {leases.length} {leases.length === 1 ? 'Active Application' : 'Total Applications'}
+        
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-gray-500 text-sm font-medium">Pending Review</p>
+            <h2 className="text-3xl font-bold text-yellow-600">
+              {leases.filter(l => l.status?.toLowerCase() === 'pending').length}
+            </h2>
+          </div>
+          <div className="bg-yellow-50 p-3 rounded-lg text-yellow-600">
+            <FaClock className="text-xl" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-gray-500 text-sm font-medium">Active Leases</p>
+            <h2 className="text-3xl font-bold text-green-600">
+              {leases.filter(l => l.status?.toLowerCase() === 'active').length}
+            </h2>
+          </div>
+          <div className="bg-green-50 p-3 rounded-lg text-green-600">
+            <FaCheckCircle className="text-xl" />
+          </div>
         </div>
       </div>
 
-      {/* Applications Grid */}
-      {leases.length > 0 ? (
-        <div className="grid gap-6">
+      {/* 2. Main Content Area */}
+      {loading ? (
+        <div className="bg-white rounded-xl p-12 text-center border border-gray-100 shadow-sm">
+          <p className="text-gray-400 animate-pulse">Loading your application history...</p>
+        </div>
+      ) : leases.length > 0 ? (
+        <div className="space-y-4">
           {leases.map((lease) => (
             <div 
               key={lease.id} 
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300 hover:-translate-y-1 group"
+              className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group"
             >
               <div className="flex flex-col md:flex-row justify-between gap-6">
                 
-                {/* Left: Property Info */}
-                <div className="flex items-start gap-5">
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-xl text-white shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform">
-                    <FaHome className="text-2xl" />
+                {/* Left: Icon & Info */}
+                <div className="flex gap-5">
+                  {/* Property Avatar */}
+                  <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 transition-colors">
+                    <FaHome className="text-2xl text-gray-400 group-hover:text-blue-500" />
                   </div>
+
+                  {/* Details */}
                   <div>
-                    <h3 className="font-bold text-xl text-gray-800 mb-1 group-hover:text-blue-600 transition-colors">
+                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                       {lease.property_name || "Unknown Property"}
                     </h3>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-2">
-                      <span className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md">
-                        <FaClock className="text-gray-400" /> 
-                        Applied: {lease.created_at ? new Date(lease.created_at).toLocaleDateString() : 'N/A'}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500 mt-1">
+                      <span className="flex items-center gap-1">
+                        <FaMapMarkerAlt className="text-gray-400" /> 
+                        {lease.location || "Nairobi, KE"}
                       </span>
-                      <span className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md font-mono text-xs text-gray-400">
-                        ID: {lease.id.slice(0, 8)}...
+                      <span className="hidden sm:block text-gray-300">•</span>
+                      <span className="flex items-center gap-1">
+                        <FaCalendarAlt className="text-gray-400" /> 
+                        Applied: {new Date(lease.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Right: Status & Action */}
-                <div className="flex flex-col md:items-end justify-between gap-4 border-t md:border-t-0 border-gray-100 pt-4 md:pt-0">
+                {/* Right: Status & Rent */}
+                <div className="flex flex-row md:flex-col justify-between items-end gap-2 min-w-[140px]">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2 ${
+                    lease.status?.toLowerCase() === 'active' ? 'bg-green-100 text-green-700' :
+                    lease.status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {lease.status?.toLowerCase() === 'active' ? <FaCheckCircle /> :
+                     lease.status?.toLowerCase() === 'pending' ? <FaClock /> : <FaTimesCircle />}
+                    {lease.status}
+                  </span>
                   
-                  {/* Status Badge */}
-                  <div className="flex justify-between w-full md:w-auto md:flex-col md:items-end">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 hidden md:block">Current Status</span>
-                    <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm ${
-                      lease.status?.toLowerCase() === 'active' ? 'bg-green-100 text-green-700 border border-green-200' :
-                      lease.status?.toLowerCase() === 'pending' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 
-                      'bg-red-50 text-red-600 border border-red-200'
-                    }`}>
-                      {lease.status?.toLowerCase() === 'active' ? <FaCheckCircle /> :
-                       lease.status?.toLowerCase() === 'pending' ? <FaClock /> : <FaTimesCircle />}
-                      {lease.status}
-                    </span>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400 font-bold uppercase">Monthly Rent</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      KSh {lease.rent_amount?.toLocaleString()}
+                    </p>
                   </div>
-                  
-                  {/* Rent Amount */}
-                  <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
-                    <div className="bg-white p-1.5 rounded-full text-green-600 shadow-sm">
-                      <FaMoneyBillWave />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Monthly Rent</p>
-                      <p className="font-bold text-gray-800">KSh {lease.rent_amount?.toLocaleString()}</p>
-                    </div>
-                  </div>
-
                 </div>
+
               </div>
+              
+              {/* Expandable Section for Active Leases */}
+              {lease.status?.toLowerCase() === 'active' && (
+                <div className="mt-6 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
+                  <button className="w-full py-2 text-sm font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+                    Download Lease Agreement
+                  </button>
+                  <button className="w-full py-2 text-sm font-bold text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    View Payment Schedule
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
       ) : (
-        // Polished Empty State
-        <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border-2 border-dashed border-gray-200 text-center">
-          <div className="bg-blue-50 p-6 rounded-full mb-6">
-            <FaSearch className="text-blue-300 text-5xl" />
+        // 3. Empty State (Matching the Dashboard Style)
+        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-16 text-center shadow-sm">
+          <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FaSearch className="text-3xl text-blue-400" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">No Applications Found</h3>
-          <p className="text-gray-500 mb-8 max-w-sm">
-            It looks like you haven't applied for any homes yet. Explore our marketplace to find your perfect place.
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No Applications Found</h3>
+          <p className="text-gray-500 mb-8 max-w-md mx-auto">
+            You haven't submitted any rental applications yet. Browse our marketplace to find your next home.
           </p>
           <a 
             href="/marketplace" 
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
           >
             Browse Properties
           </a>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 };
 

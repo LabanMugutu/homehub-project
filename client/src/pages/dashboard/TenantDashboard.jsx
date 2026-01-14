@@ -1,122 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { FaFileContract, FaCalendarCheck, FaTools, FaHistory } from 'react-icons/fa';
+import api from '../../api/axios';
+import { FaFileContract, FaCalendarCheck, FaTools, FaHistory, FaCheckCircle, FaHourglassHalf, FaTimesCircle } from 'react-icons/fa';
 
 const TenantDashboard = () => {
-  const [activeTab, setActiveTab] = useState('lease'); // 'lease' or 'maintenance'
+  const [activeTab, setActiveTab] = useState('lease');
+  const [leases, setLeases] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock Lease Data
-  const lease = {
-    property: "Sunset Apartments, Unit 4B",
-    landlord: "John Doe",
-    startDate: "2024-01-01",
-    endDate: "2024-12-31",
-    rentAmount: 45000,
-    nextDue: "2024-02-05",
-    status: "Active",
-    document: "lease_signed.pdf"
-  };
+  useEffect(() => {
+    api.get('/leases')
+      .then(res => setLeases(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  // Mock Maintenance History
-  const maintenanceHistory = [
-    { id: 1, title: "Leaking Sink", date: "2024-01-10", status: "Resolved" },
-    { id: 2, title: "Broken Window", date: "2024-01-15", status: "Pending" }
-  ];
+  // 🟢 FIND ACTIVE LEASE
+  const activeLease = leases.find(l => l.status === 'active');
 
   return (
     <DashboardLayout title="Tenant Portal" role="tenant">
-      
-      {/* Tab Navigation */}
       <div className="flex gap-4 mb-8 border-b border-gray-200">
-        <button 
-          onClick={() => setActiveTab('lease')}
-          className={`pb-2 px-4 font-bold ${activeTab === 'lease' ? 'text-brand-blue border-b-2 border-brand-blue' : 'text-gray-500'}`}
-        >
-          <FaFileContract className="inline mr-2" /> Lease Agreement
+        <button onClick={() => setActiveTab('lease')} className={`pb-2 px-4 font-bold ${activeTab === 'lease' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>
+          <FaFileContract className="inline mr-2" /> My Lease & Applications
         </button>
-        <button 
-          onClick={() => setActiveTab('maintenance')}
-          className={`pb-2 px-4 font-bold ${activeTab === 'maintenance' ? 'text-brand-blue border-b-2 border-brand-blue' : 'text-gray-500'}`}
-        >
+        <button onClick={() => setActiveTab('maintenance')} className={`pb-2 px-4 font-bold ${activeTab === 'maintenance' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}>
           <FaTools className="inline mr-2" /> Maintenance
         </button>
       </div>
 
-      {/* --- LEASE TAB --- */}
       {activeTab === 'lease' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Rent Card */}
-          <div className="bg-gradient-to-br from-brand-blue to-blue-900 text-white rounded-xl p-8 shadow-lg">
-            <h3 className="text-blue-200 uppercase text-xs font-bold mb-2">Next Rent Due</h3>
-            <div className="text-5xl font-bold mb-4">Ksh {lease.rentAmount.toLocaleString()}</div>
-            <div className="flex items-center gap-2 mb-8 text-blue-100">
-              <FaCalendarCheck /> Due Date: <span className="font-bold text-white">{lease.nextDue}</span>
-            </div>
-            <button className="w-full bg-white text-brand-blue font-bold py-3 rounded-lg hover:bg-gray-100 transition">
-              Pay Rent Now
-            </button>
-          </div>
+        <div className="space-y-8">
+          {/* TOP SECTION: ACTIVE LEASE ONLY */}
+          {activeLease ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="bg-blue-600 text-white rounded-xl p-8 shadow-lg">
+                <h3 className="text-blue-100 uppercase text-xs font-bold mb-2">Rent Amount</h3>
+                <div className="text-5xl font-bold mb-4">Ksh {activeLease.rent_amount.toLocaleString()}</div>
+                <div className="flex items-center gap-2 mb-8 text-blue-50">
+                  <FaCalendarCheck /> Move-in: <strong>{new Date(activeLease.start_date).toLocaleDateString()}</strong>
+                </div>
+                <button className="w-full bg-white text-blue-600 font-bold py-3 rounded-lg hover:bg-gray-100 transition">Pay Now</button>
+              </div>
 
-          {/* Details Card */}
-          <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
-            <h3 className="text-gray-800 font-bold text-lg mb-6">Agreement Details</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between border-b border-gray-100 pb-2">
-                <span className="text-gray-500">Property</span>
-                <span className="font-medium text-gray-800">{lease.property}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-100 pb-2">
-                <span className="text-gray-500">Landlord</span>
-                <span className="font-medium text-gray-800">{lease.landlord}</span>
-              </div>
-              <div className="flex justify-between border-b border-gray-100 pb-2">
-                <span className="text-gray-500">Lease Period</span>
-                <span className="font-medium text-gray-800">{lease.startDate} to {lease.endDate}</span>
-              </div>
-              <div className="mt-6 pt-4">
-                <button className="text-brand-blue font-bold text-sm hover:underline">
-                  Download Signed Lease (PDF)
-                </button>
+              <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+                <h3 className="text-gray-800 font-bold text-lg mb-6">Agreement Summary</h3>
+                <div className="space-y-4 text-sm">
+                  <div className="flex justify-between border-b pb-2">
+                    <span className="text-gray-500">Property</span>
+                    <span className="font-bold">{activeLease.property_name}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-2">
+                    <span className="text-gray-500">Expiry Date</span>
+                    <span className="font-bold text-red-500">{new Date(activeLease.end_date).toLocaleDateString()}</span>
+                  </div>
+                  <span className="inline-block mt-4 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">ACTIVE LEASE</span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          ) : (
+            <div className="bg-gray-50 p-10 rounded-xl border border-dashed border-gray-300 text-center text-gray-500">
+              No active lease found. Monitor your applications in the history section below.
+            </div>
+          )}
 
-      {/* --- MAINTENANCE TAB --- */}
-      {activeTab === 'maintenance' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
-          <h3 className="font-bold text-gray-800 mb-4">Report an Issue</h3>
-          <form className="mb-8">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-               <input type="text" placeholder="Issue Title (e.g. No Hot Water)" className="border p-3 rounded" />
-               <select className="border p-3 rounded">
-                 <option>Low Priority</option>
-                 <option>Medium Priority</option>
-                 <option>High Priority (Emergency)</option>
-               </select>
-             </div>
-             <textarea placeholder="Describe the issue..." className="w-full border p-3 rounded h-24 mb-4"></textarea>
-             <button className="bg-gray-800 text-white px-6 py-2 rounded font-bold">Submit Request</button>
-          </form>
-
-          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><FaHistory /> Request History</h3>
-          <ul className="space-y-3">
-            {maintenanceHistory.map(item => (
-              <li key={item.id} className="flex justify-between items-center p-4 bg-gray-50 rounded border border-gray-100">
-                <span className="font-medium text-gray-700">{item.title}</span>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500">{item.date}</span>
-                  <span className={`text-xs px-2 py-1 rounded font-bold ${item.status === 'Resolved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {item.status}
+          {/* HISTORY SECTION: ALL APPLICATIONS */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-6 border-b border-gray-100 font-bold text-gray-800 flex items-center gap-2">
+              <FaHistory /> Application History
+            </div>
+            <div className="divide-y divide-gray-100">
+              {loading ? <div className="p-6 text-center">Syncing...</div> : leases.map(l => (
+                <div key={l.id} className="p-6 flex justify-between items-center hover:bg-gray-50">
+                  <div>
+                    <h4 className="font-bold text-gray-800">{l.property_name}</h4>
+                    <p className="text-xs text-gray-400">Application Date: {new Date(l.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <span className={`flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full uppercase border ${
+                    l.status === 'active' ? 'bg-green-50 text-green-600 border-green-200' :
+                    l.status === 'pending' ? 'bg-yellow-50 text-yellow-600 border-yellow-200' : 'bg-red-50 text-red-600 border-red-200'
+                  }`}>
+                    {l.status === 'active' ? <FaCheckCircle /> : l.status === 'pending' ? <FaHourglassHalf /> : <FaTimesCircle />} {l.status}
                   </span>
                 </div>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          </div>
         </div>
       )}
-
     </DashboardLayout>
   );
 };

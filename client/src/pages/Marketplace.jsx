@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-// If you have a Layout component, keep the import
-// import Layout from '../components/Layout'; 
 
 const Marketplace = () => {
   const [properties, setProperties] = useState([]);
@@ -9,17 +7,23 @@ const Marketplace = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. Fetch Data from Backend
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        // Use the environment variable we set in Render
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        // 1. Get the Base URL (e.g., https://homehub-api.onrender.com)
+        let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         
-        // Call the endpoint
-        const response = await axios.get(`${API_URL}/properties`);
+        // Remove trailing slash if present to avoid double slashes
+        if (API_URL.endsWith('/')) {
+            API_URL = API_URL.slice(0, -1);
+        }
+
+        console.log("Fetching from:", `${API_URL}/api/properties`); // Debug log
+
+        // 2. THE FIX: Add '/api' before '/properties'
+        const response = await axios.get(`${API_URL}/api/properties`);
         
-        // Update state with live data
+        console.log("Data received:", response.data); // Debug log
         setProperties(response.data);
         setLoading(false);
       } catch (err) {
@@ -32,7 +36,8 @@ const Marketplace = () => {
     fetchProperties();
   }, []);
 
-  // 2. Filter Logic (Optional: keeps search working)
+  // ... (Keep the rest of your render code exactly the same)
+  
   const filteredProperties = properties.filter(property =>
     property.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     property.location?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -62,7 +67,6 @@ const Marketplace = () => {
           {filteredProperties.map((property) => (
             <div key={property.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               
-              {/* Image Handling */}
               <img 
                 src={property.image_url || "https://via.placeholder.com/400x300?text=No+Image"} 
                 alt={property.name} 
@@ -84,13 +88,10 @@ const Marketplace = () => {
                     ${property.price} <span className="text-sm font-normal text-gray-500">/mo</span>
                   </span>
                 </div>
-
-                {/* Features Badges */}
-                <div className="mt-3 flex gap-2 text-sm text-gray-500">
+                 <div className="mt-3 flex gap-2 text-sm text-gray-500">
                    <span>🛏️ {property.bedrooms} Bed</span>
                    <span>🚿 {property.bathrooms} Bath</span>
                 </div>
-
                 <button className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
                   View Details
                 </button>

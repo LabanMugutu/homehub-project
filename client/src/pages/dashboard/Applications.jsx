@@ -1,77 +1,78 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import api from '../../api/axios';
-import { Link } from 'react-router-dom';
+import { FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 
 const Applications = () => {
   const [leases, setLeases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [debugData, setDebugData] = useState(null);
 
   useEffect(() => {
-    const fetchLeases = async () => {
-      try {
-        const res = await api.get('/leases/my-leases');
-        setLeases(res.data);
-      } catch (error) {
-        console.error("Failed to load leases");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLeases();
+    // 🟢 FORCE FETCH
+    api.get('/leases')
+      .then(res => {
+        console.log("🔥 DEBUG DATA RECEIVED:", res.data);
+        setDebugData(res.data);
+        
+        // Handle array vs object responses
+        if (Array.isArray(res.data)) {
+          setLeases(res.data);
+        } else if (res.data && Array.isArray(res.data.leases)) {
+          setLeases(res.data.leases);
+        } else {
+          setLeases([]); 
+        }
+      })
+      .catch(err => {
+        console.error("🔥 FETCH ERROR:", err);
+        setDebugData({ error: err.message });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (
-    <DashboardLayout title="My Applications" role="tenant">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading applications...</div>
-        ) : leases.length === 0 ? (
-          <div className="p-12 text-center">
-            <h3 className="text-xl font-bold text-gray-700 mb-2">No Applications Yet</h3>
-            <p className="text-gray-500 mb-6">You haven't applied for any homes yet.</p>
-            <Link to="/marketplace" className="bg-brand-blue text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-900 transition">
-              Find a Home
-            </Link>
-          </div>
-        ) : (
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-6 py-3">Property</th>
-                <th className="px-6 py-3">Rent</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">Applied Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {leases.map(lease => (
-                <tr key={lease.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <p className="font-bold text-gray-800">{lease.property_title}</p>
-                    <p className="text-xs text-gray-500">{lease.property_city}</p>
-                  </td>
-                  <td className="px-6 py-4 font-bold text-gray-600">
-                    KES {lease.monthly_rent?.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase
-                      ${lease.status === 'active' ? 'bg-green-100 text-green-700' : 
-                        lease.status === 'rejected' ? 'bg-red-100 text-red-700' : 
-                        'bg-yellow-100 text-yellow-700'}`}>
-                      {lease.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(lease.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+    <div className="relative min-h-screen bg-gray-50 p-10">
+      <h1 className="text-3xl font-bold mb-8">Application Debugger</h1>
+
+      {/* 🔴 THE FLOATING BLACK BOX (Z-Index 50 ensures it's on top) */}
+      <div className="fixed top-24 right-10 z-50 bg-black text-green-400 p-6 rounded-xl shadow-2xl border-4 border-red-500 w-96 font-mono text-xs">
+        <h2 className="text-white text-lg font-bold border-b border-gray-600 mb-2 pb-2 flex items-center gap-2">
+          <FaExclamationTriangle className="text-red-500" /> DIAGNOSTIC PANEL
+        </h2>
+        <div className="space-y-2">
+          <p><strong className="text-white">Status:</strong> {loading ? "Loading..." : "Finished"}</p>
+          <p><strong className="text-white">Items Found:</strong> {leases.length}</p>
+          <p><strong className="text-white">Raw Data Dump:</strong></p>
+          <pre className="bg-gray-900 p-2 rounded overflow-auto max-h-40 text-gray-300">
+            {JSON.stringify(debugData, null, 2)}
+          </pre>
+        </div>
       </div>
-    </DashboardLayout>
+      {/* ------------------------------------------------------- */}
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-xl text-gray-500">
+          <FaSpinner className="animate-spin" /> Loading...
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {leases.length === 0 ? (
+            <div className="p-10 bg-white border-2 border-dashed border-gray-300 rounded-xl text-center">
+              <h3 className="text-xl font-bold text-gray-400">Result: 0 Items</h3>
+              <p className="text-gray-500">The backend returned an empty list.</p>
+            </div>
+          ) : (
+            leases.map(l => (
+              <div key={l.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h3 className="font-bold text-lg">{l.property_name || "Unknown Property"}</h3>
+                <p>Status: {l.status}</p>
+                <p className="text-xs text-gray-400">ID: {l.id}</p>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

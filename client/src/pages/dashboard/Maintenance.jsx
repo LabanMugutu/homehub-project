@@ -1,93 +1,265 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../layouts/DashboardLayout';
-import api from '../../api/axios';
-import { FaTools, FaPlus, FaClock } from 'react-icons/fa';
+import DashboardLayout from '../../../layouts/DashboardLayout';
+import api from '../../../api/axios';
+import { FaTools, FaPlus, FaCheckCircle, FaExclamationCircle, FaSpinner, FaHome, FaLock } from 'react-icons/fa';
 
 const Maintenance = () => {
-  const [requests, setRequests] = useState([]); // 👈 Starts Empty! No dummy data.
+  const [requests, setRequests] = useState([]);
+  const [activeLeases, setActiveLeases] = useState([]); 
+  const [pendingLeases, setPendingLeases] = useState([]); 
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user'));
-  const [formData, setFormData] = useState({ title: '', description: '', unit_id: '' });
+  
+  const [formData, setFormData] = useState({ 
+    unit_id: '', 
+    title: '', 
+    description: '', 
+    priority: 'medium' 
+  });
+  
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
 
-  // FETCH REAL DATA
-  const fetchRequests = async () => {
-    try {
-      const res = await api.get('/maintenance');
-      setRequests(res.data);
-    } catch (error) {
-      console.error("Error loading maintenance requests");
-    } finally {
-      setLoading(false);
+  // 1. FETCH DATA
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [reqRes, leaseRes] = await Promise.all([
+          api.get('/maintenance'),
+          api.get('/leases')
+        ]);
+
+        setRequests(reqRes.data);
+        
+        // Filter Leases
+        const leases = leaseRes.data || [];
+        const active = leases.filter(l => l.status?.toLowerCase() === 'active');
+        const pending = leases.filter(l => l.status?.toLowerCase() === 'pending');
+
+        setActiveLeases(active);
+        setPendingLeases(pending);
+
+      } catch (err) {
+        console.error("Data load error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // 🟢 2. THE WATCHER (Guarantees Auto-Selection)
+  // This runs automatically whenever 'activeLeases' updates.
+  useEffect(() => {
+    if (activeLeases.length === 1) {
+      console.log("🟢 Auto-selecting single property:", activeLeases[0].property_name);
+      setFormData(prev => ({ 
+        ...prev, 
+        unit_id: activeLeases[0].unit_id // Force the ID into the form
+      }));
     }
-  };
+  }, [activeLeases]);
 
-  useEffect(() => { fetchRequests(); }, []);
-
-  // SUBMIT REAL DATA
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setMessage({ type: '', text: '' });
+
     try {
-      await api.post('/maintenance', formData);
-      setShowModal(false);
-      fetchRequests();
-      alert("Request Submitted!");
-    } catch (error) {
-      alert("Failed. Ensure you have an active lease.");
+      const res = await api.post('/maintenance', formData);
+      setRequests([res.data.request, ...requests]);
+      setMessage({ type: 'success', text: 'Request submitted successfully!' });
+      
+      // Reset form but KEEP the unit_id if they only have 1 property
+      setFormData(prev => ({
+        ...prev,
+        title: '',
+        description: '',
+        priority: 'medium',
+        unit_id: activeLeases.length === 1 ? activeLeases[0].unit_id : ''
+      }));
+
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.error || "Submission failed" });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <DashboardLayout title="Maintenance" role={user.role}>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Maintenance Requests</h2>
-        {user.role === 'tenant' && (
-          <button onClick={() => setShowModal(true)} className="bg-brand-blue text-white px-4 py-2 rounded-lg flex items-center gap-2">
-            <FaPlus /> New Request
-          </button>
-        )}
-      </div>
+    <DashboardLayout title="Maintenance" role="tenant">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* FORM SECTION */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-fit">
+          <h2 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+            <FaPlus className="text-blue-600" /> Report New Issue
+          </h2>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : requests.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">No maintenance requests found.</div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {requests.map(req => (
-              <div key={req.id} className="p-6 flex flex-col md:flex-row justify-between gap-4">
-                <div className="flex gap-4">
-                  <div className="p-3 rounded-full bg-yellow-100 text-yellow-600 h-fit"><FaTools /></div>
-                  <div>
-                    <h3 className="font-bold text-gray-800">{req.title}</h3>
-                    <p className="text-gray-600 text-sm mt-1">{req.description}</p>
-                    <div className="mt-2 text-xs text-gray-400">Status: {req.status}</div>
+          {/* 🟢 VISUAL DEBUGGER (Remove this div after testing if you want) */}
+          <div className="text-xs text-gray-400 mb-4 pb-2 border-b border-gray-100">
+             System Status: Found {activeLeases.length} Active Lease(s). 
+             {activeLeases.length === 1 && " Auto-Select Active."}
+          </div>
+
+          {message.text && (
+            <div className={`p-3 rounded-lg text-xs mb-4 flex items-center gap-2 ${
+              message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            }`}>
+              {message.type === 'success' ? <FaCheckCircle /> : <FaExclamationCircle />}
+              {message.text}
+            </div>
+          )}
+
+          {/* WARNING: Pending but No Active */}
+          {activeLeases.length === 0 && pendingLeases.length > 0 && (
+            <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg text-sm mb-6 border border-yellow-200">
+              <strong className="flex items-center gap-2 mb-1"><FaLock /> Lease Pending Approval</strong>
+              <p>Your lease for <strong>{pendingLeases[0].property_name}</strong> is awaiting landlord approval.</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* 🟢 ROBUST PROPERTY SELECTOR */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Property</label>
+              
+              {activeLeases.length > 1 ? (
+                // SCENARIO A: Multiple Properties -> Dropdown
+                <div className="relative">
+                  <select 
+                    required
+                    className="w-full border rounded-lg p-3 text-sm appearance-none bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    value={formData.unit_id}
+                    onChange={e => setFormData({...formData, unit_id: e.target.value})}
+                  >
+                    <option value="">-- Select Property --</option>
+                    {activeLeases.map(lease => (
+                      <option key={lease.id} value={lease.unit_id}>
+                        {lease.property_name || "Unknown Property"} ({lease.unit_number})
+                      </option>
+                    ))}
+                  </select>
+                  <FaHome className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
+                </div>
+
+              ) : activeLeases.length === 1 ? (
+                // SCENARIO B: Single Property -> Read-Only Input
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={activeLeases[0].property_name || "Your Property"} 
+                    disabled
+                    className="w-full border rounded-lg p-3 text-sm bg-gray-100 text-gray-700 font-bold cursor-not-allowed"
+                  />
+                  <FaLock className="absolute right-3 top-3.5 text-gray-400" />
+                </div>
+
+              ) : (
+                // SCENARIO C: No Active Leases -> Disabled Input
+                <input 
+                  disabled 
+                  placeholder="No active leases found"
+                  className="w-full border rounded-lg p-3 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                />
+              )}
+            </div>
+
+            {/* Title */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Issue Title</label>
+              <input 
+                required 
+                disabled={activeLeases.length === 0}
+                type="text" 
+                placeholder="e.g. Leaking Sink"
+                className="w-full border rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                value={formData.title}
+                onChange={e => setFormData({...formData, title: e.target.value})}
+              />
+            </div>
+
+            {/* Priority */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Priority</label>
+              <select 
+                disabled={activeLeases.length === 0}
+                className="w-full border rounded-lg p-3 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                value={formData.priority}
+                onChange={e => setFormData({...formData, priority: e.target.value})}
+              >
+                <option value="medium">Medium - General Repair</option>
+                <option value="low">Low - Cosmetic Issue</option>
+                <option value="high">High - Emergency/Safety</option>
+              </select>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Description</label>
+              <textarea 
+                required 
+                disabled={activeLeases.length === 0}
+                rows="4" 
+                placeholder="Describe the issue..."
+                className="w-full border rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-gray-50"
+                value={formData.description}
+                onChange={e => setFormData({...formData, description: e.target.value})}
+              ></textarea>
+            </div>
+
+            <button 
+              disabled={submitting || activeLeases.length === 0}
+              className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex justify-center items-center gap-2"
+            >
+              {submitting ? 'Submitting...' : 'Submit Request'}
+            </button>
+          </form>
+        </div>
+
+        {/* HISTORY LIST */}
+        <div className="lg:col-span-2">
+          <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <FaTools className="text-gray-400" /> Request History
+          </h2>
+          
+          {loading ? (
+            <div className="flex justify-center p-10"><FaSpinner className="animate-spin text-blue-500"/></div>
+          ) : requests.length > 0 ? (
+            <div className="space-y-4">
+              {requests.map(req => (
+                <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-gray-800">{req.title}</h3>
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                           {req.property_name || "Unknown Property"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">{req.description}</p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        {new Date(req.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                      req.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      req.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {req.status?.replace('_', ' ')}
+                    </span>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* MODAL */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Report Issue</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input type="text" placeholder="Unit ID" className="w-full border p-2 rounded" onChange={e => setFormData({...formData, unit_id: e.target.value})} required />
-              <input type="text" placeholder="Title" className="w-full border p-2 rounded" onChange={e => setFormData({...formData, title: e.target.value})} required />
-              <textarea placeholder="Description" className="w-full border p-2 rounded h-24" onChange={e => setFormData({...formData, description: e.target.value})} required />
-              <div className="flex gap-2 justify-end mt-4">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-500">Cancel</button>
-                <button className="px-4 py-2 bg-brand-blue text-white rounded">Submit</button>
-              </div>
-            </form>
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center p-10 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200 text-gray-400">
+              No maintenance requests found.
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 };

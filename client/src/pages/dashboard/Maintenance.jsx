@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../../layouts/DashboardLayout';
-import api from '../../../api/axios';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import api from '../../api/axios';
 import { FaTools, FaPlus, FaCheckCircle, FaExclamationCircle, FaSpinner, FaHome, FaLock } from 'react-icons/fa';
 
 const Maintenance = () => {

@@ -15,19 +15,20 @@ import Register from './pages/Register';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import Settings from './pages/dashboard/Settings';
 import Notifications from './pages/dashboard/Notifications';
-import Applications from './pages/dashboard/Applications'; // Tenant Lease View
-import Maintenance from './pages/dashboard/Maintenance';   // 👈 NEW: Maintenance Page
+import Maintenance from './pages/dashboard/Maintenance';
+
+// 🟢 NEW: Import the specific Tenant Applications page we just created
+import MyApplications from './pages/dashboard/MyApplications'; 
 
 // --- 4. Pages: Landlord Specific ---
 import AddProperty from './pages/dashboard/landlord/AddProperty';
 import MyProperties from './pages/dashboard/landlord/MyProperties';
-import LeaseRequests from './pages/dashboard/landlord/LeaseRequests'; // Landlord Lease View
+import LeaseRequests from './pages/dashboard/landlord/LeaseRequests';
 
 // --- 5. Pages: Admin Specific ---
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 
 // --- 6. PLACEHOLDER COMPONENT ---
-// Keeps the app from crashing on tabs we haven't built yet (Payments, Messages)
 const ComingSoon = ({ title }) => (
   <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
     <h1 className="text-4xl font-bold text-gray-800 mb-4">🚧 {title}</h1>
@@ -58,12 +59,11 @@ function App() {
         <Route path="/dashboard" element={<DashboardHome />} />
         <Route path="/dashboard/settings" element={<Settings />} />
         <Route path="/dashboard/notifications" element={<Notifications />} />
-        
-        {/* ✅ NEW: Maintenance (Shared by Tenant & Landlord) */}
         <Route path="/dashboard/maintenance" element={<Maintenance />} />
 
         {/* 2. Tenant Routes */}
-        <Route path="/dashboard/applications" element={<Applications />} />
+        {/* 🟢 THIS NOW POINTS TO YOUR NEW FILE */}
+        <Route path="/dashboard/applications" element={<MyApplications />} />
         <Route path="/dashboard/favorites" element={<ComingSoon title="Saved Homes" />} />
 
         {/* 3. Landlord Routes */}
@@ -76,7 +76,6 @@ function App() {
         <Route path="/dashboard/admin" element={<AdminDashboard />} />
 
         {/* ================= PENDING FEATURES ================= */}
-        {/* These remaining placeholders will be replaced as we build them */}
         <Route path="/dashboard/payments" element={<ComingSoon title="Payments & Invoices" />} />
         <Route path="/dashboard/messages" element={<ComingSoon title="Messages" />} />
 

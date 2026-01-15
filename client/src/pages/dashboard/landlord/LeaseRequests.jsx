@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../layouts/DashboardLayout';
+import DashboardLayout from '../../../layouts/DashboardLayout';
 import api from '../../api/axios';
 import { FaCheck, FaTimes, FaUser, FaHome, FaSpinner } from 'react-icons/fa';
 

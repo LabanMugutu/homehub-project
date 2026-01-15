@@ -1,8 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
+// 🟢 FIXED: Added FaFileInvoiceDollar and FaMobileAlt to imports
 import { 
   FaHome, FaBuilding, FaClipboardList, FaTools, 
-  FaBell, FaCog, FaSignOutAlt, FaUserShield, FaUser
+  FaBell, FaCog, FaSignOutAlt, FaUserShield, FaUser,
+  FaFileInvoiceDollar, FaMobileAlt 
 } from 'react-icons/fa';
 
 const DashboardLayout = ({ children, title, role }) => {
@@ -27,24 +29,20 @@ const DashboardLayout = ({ children, title, role }) => {
       { label: 'Overview', path: '/dashboard', icon: <FaHome /> },
       { label: 'My Properties', path: '/dashboard/landlord', icon: <FaBuilding /> }, 
       { label: 'Lease Requests', path: '/dashboard/landlord/requests', icon: <FaClipboardList /> }, 
-      
-      // 🟢 FIX: Point to the LANDLORD maintenance page
       { label: 'Maintenance', path: '/dashboard/landlord/maintenance', icon: <FaTools /> },
-      
+      // 🟢 NEW: Invoicing Link
+      { label: 'Invoicing', path: '/dashboard/landlord/invoices', icon: <FaFileInvoiceDollar /> },
       { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> },
       { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
-      { label: 'Invoicing', path: '/dashboard/landlord/invoices', icon: <FaFileInvoiceDollar /> },
     ],
     tenant: [
       { label: 'Overview', path: '/dashboard', icon: <FaHome /> },
       { label: 'My Applications', path: '/dashboard/applications', icon: <FaClipboardList /> },
-      
-      // Tenant keeps the original link
       { label: 'Maintenance', path: '/dashboard/maintenance', icon: <FaTools /> },
-      
+      // 🟢 NEW: Billing Link
+      { label: 'Billing & Payments', path: '/dashboard/billing', icon: <FaMobileAlt /> },
       { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> },
       { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
-      { label: 'Billing & Payments', path: '/dashboard/billing', icon: <FaMobileAlt /> },
     ]
   };
 

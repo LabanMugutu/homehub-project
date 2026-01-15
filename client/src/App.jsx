@@ -19,12 +19,14 @@ import Maintenance from './pages/dashboard/Maintenance';;
 
 // 🟢 NEW: Import the specific Tenant Applications page we just created
 import Applications from './pages/dashboard/Applications';
+import TenantBilling from './pages/dashboard/TenantBilling';
 
 // --- 4. Pages: Landlord Specific ---
 import AddProperty from './pages/dashboard/landlord/AddProperty';
 import MyProperties from './pages/dashboard/landlord/MyProperties';
 import LeaseRequests from './pages/dashboard/landlord/LeaseRequests';
 import LandlordMaintenance from './pages/dashboard/landlord/LandlordMaintenance';
+import LandlordInvoices from './pages/dashboard/landlord/Invoices';
 
 // --- 5. Pages: Admin Specific ---
 import AdminDashboard from './pages/dashboard/AdminDashboard';
@@ -65,13 +67,15 @@ function App() {
         {/* 2. Tenant Routes */}
         {/* 🟢 THIS NOW POINTS TO YOUR NEW FILE */}
        <Route path="/dashboard/applications" element={<Applications />} />
-        <Route path="/dashboard/favorites" element={<ComingSoon title="Saved Homes" />} />
+       <Route path="/dashboard/favorites" element={<ComingSoon title="Saved Homes" />} />
+       <Route path="/dashboard/billing" element={<TenantBilling />} />
 
         {/* 3. Landlord Routes */}
         <Route path="/dashboard/landlord" element={<MyProperties />} />
         <Route path="/dashboard/landlord/add" element={<AddProperty />} />
         <Route path="/dashboard/landlord/requests" element={<LeaseRequests />} />
         <Route path="/dashboard/landlord/maintenance" element={<LandlordMaintenance />} />
+        <Route path="/dashboard/landlord/invoices" element={<LandlordInvoices />} />
         
         {/* 4. Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />

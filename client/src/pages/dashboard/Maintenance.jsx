@@ -77,7 +77,7 @@ const Maintenance = () => {
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Report Issue</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <input type="text" placeholder="Unit ID" className="w-full border p-2 rounded" onChange={e => setFormData({...formData, unit_id: e.target.value})} required />
+              <input type="text" placeholder="Property" className="w-full border p-2 rounded" onChange={e => setFormData({...formData, unit_id: e.target.value})} required />
               <input type="text" placeholder="Title" className="w-full border p-2 rounded" onChange={e => setFormData({...formData, title: e.target.value})} required />
               <textarea placeholder="Description" className="w-full border p-2 rounded h-24" onChange={e => setFormData({...formData, description: e.target.value})} required />
               <div className="flex gap-2 justify-end mt-4">

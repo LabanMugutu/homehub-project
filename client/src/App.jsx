@@ -15,10 +15,10 @@ import Register from './pages/Register';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import Settings from './pages/dashboard/Settings';
 import Notifications from './pages/dashboard/Notifications';
-import Maintenance from './pages/dashboard/Maintenance';
+import Maintenance from './pages/dashboard/Maintenance';;
 
 // 🟢 NEW: Import the specific Tenant Applications page we just created
-import MyApplications from './pages/dashboard/MyApplications'; 
+import Applications from './pages/dashboard/Applications';
 
 // --- 4. Pages: Landlord Specific ---
 import AddProperty from './pages/dashboard/landlord/AddProperty';
@@ -63,7 +63,7 @@ function App() {
 
         {/* 2. Tenant Routes */}
         {/* 🟢 THIS NOW POINTS TO YOUR NEW FILE */}
-        <Route path="/dashboard/applications" element={<MyApplications />} />
+       <Route path="/dashboard/applications" element={<Applications />} />
         <Route path="/dashboard/favorites" element={<ComingSoon title="Saved Homes" />} />
 
         {/* 3. Landlord Routes */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../layouts/DashboardLayout'; // 🟢 CRITICAL: Imports your App's Layout
-import api from '../../api/axios';
+import DashboardLayout from '../../layouts/DashboardLayout'; // ✅ Correct path (2 levels up)
+import api from '../../api/axios'; // ✅ Correct path (2 levels up)
 import { 
   FaHome, FaSearch, FaCalendarAlt, FaMoneyBillWave, 
   FaCheckCircle, FaClock, FaTimesCircle, FaMapMarkerAlt 
@@ -13,6 +13,7 @@ const Applications = () => {
   useEffect(() => {
     api.get('/leases')
       .then(res => {
+        // Robust handling for different data shapes
         if (Array.isArray(res.data)) {
           setLeases(res.data);
         } else if (res.data && Array.isArray(res.data.leases)) {
@@ -26,7 +27,6 @@ const Applications = () => {
   }, []);
 
   return (
-    // 🟢 WRAPPER: Matches the sidebar/header structure of TenantDashboard
     <DashboardLayout title="My Applications" role="tenant">
       
       {/* 1. Header Stats Section */}
@@ -82,22 +82,20 @@ const Applications = () => {
                 
                 {/* Left: Icon & Info */}
                 <div className="flex gap-5">
-                  {/* Property Avatar */}
                   <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-50 transition-colors">
                     <FaHome className="text-2xl text-gray-400 group-hover:text-blue-500" />
                   </div>
 
-                  {/* Details */}
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                       {lease.property_name || "Unknown Property"}
                     </h3>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500 mt-1">
-                      <span className="flex items-center gap-1">
-                        <FaMapMarkerAlt className="text-gray-400" /> 
-                        {lease.location || "Nairobi, KE"}
-                      </span>
-                      <span className="hidden sm:block text-gray-300">•</span>
+                      {lease.unit_number && (
+                        <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold text-gray-600">
+                          Unit: {lease.unit_number}
+                        </span>
+                      )}
                       <span className="flex items-center gap-1">
                         <FaCalendarAlt className="text-gray-400" /> 
                         Applied: {new Date(lease.created_at).toLocaleDateString()}
@@ -128,14 +126,14 @@ const Applications = () => {
 
               </div>
               
-              {/* Expandable Section for Active Leases */}
+              {/* Active Lease Actions */}
               {lease.status?.toLowerCase() === 'active' && (
-                <div className="mt-6 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
-                  <button className="w-full py-2 text-sm font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
-                    Download Lease Agreement
-                  </button>
-                  <button className="w-full py-2 text-sm font-bold text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                    View Payment Schedule
+                <div className="mt-6 pt-4 border-t border-gray-100 flex gap-4">
+                  <a href="/dashboard/maintenance" className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">
+                    Report Issue
+                  </a>
+                  <button className="text-sm font-bold text-gray-600 hover:text-gray-800 transition">
+                    View Lease Agreement
                   </button>
                 </div>
               )}
@@ -143,7 +141,7 @@ const Applications = () => {
           ))}
         </div>
       ) : (
-        // 3. Empty State (Matching the Dashboard Style)
+        // 3. Empty State
         <div className="bg-white rounded-xl border border-dashed border-gray-300 p-16 text-center shadow-sm">
           <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
             <FaSearch className="text-3xl text-blue-400" />

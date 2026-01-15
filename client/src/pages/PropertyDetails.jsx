@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
 import { FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined, FaChevronLeft, FaChevronRight, FaImages } from 'react-icons/fa';
+import { useToast } from '../context/ToastContext.jsx';
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -10,6 +11,7 @@ const PropertyDetails = () => {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const { addToast } = useToast();
   
   // 🟢 NEW: State for Image Carousel & Role Check
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
@@ -61,11 +63,11 @@ const PropertyDetails = () => {
     setApplying(true);
     try {
       await api.post('/leases', { property_id: property.id });
-      alert("✅ Application Sent! Check your Tenant Dashboard.");
+      addToast("✅ Application Sent! Check your Tenant Dashboard.");
       // 🟢 Redirect to the dashboard we fixed earlier
       navigate('/dashboard/tenant');
     } catch (error) {
-      alert(error.response?.data?.error || "Application failed.");
+      addToast(error.response?.data?.error || "Application failed.", "error");
     } finally {
       setApplying(false);
     }

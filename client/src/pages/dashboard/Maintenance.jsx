@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import api from '../../api/axios';
 import { FaTools, FaPlus, FaCheckCircle, FaExclamationCircle, FaSpinner, FaHome, FaLock } from 'react-icons/fa';
+import { useToast } from '../../context/ToastContext.jsx';
 
 const Maintenance = () => {
   const [requests, setRequests] = useState([]);
   const [activeLeases, setActiveLeases] = useState([]); 
   const [pendingLeases, setPendingLeases] = useState([]); 
   const [loading, setLoading] = useState(true);
-  
+  const { addToast } = useToast();
+
   const [formData, setFormData] = useState({ 
     unit_id: '', 
     title: '', 
@@ -40,6 +42,7 @@ const Maintenance = () => {
 
       } catch (err) {
         console.error("Data load error:", err);
+        addToast("Failed to load maintenance data.", "error");
       } finally {
         setLoading(false);
       }
@@ -66,20 +69,24 @@ const Maintenance = () => {
 
     try {
       const res = await api.post('/maintenance', formData);
-      setRequests([res.data.request, ...requests]);
-      setMessage({ type: 'success', text: 'Request submitted successfully!' });
       
-      // Reset form but KEEP the unit_id if they only have 1 property
-      setFormData(prev => ({
-        ...prev,
+      // Add the new request to the list (optimistic update)
+      setRequests([res.data.request || res.data, ...requests]);
+      
+      addToast("Maintenance request submitted successfully!", "success");
+
+      // Reset form, but preserve unit_id if only one lease
+      setFormData({
+        unit_id: activeLeases.length === 1 ? activeLeases[0].unit_id : '',
         title: '',
         description: '',
-        priority: 'medium',
-        unit_id: activeLeases.length === 1 ? activeLeases[0].unit_id : ''
-      }));
+        priority: 'medium'
+      });
 
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || "Submission failed" });
+      console.error("Submission error:", err);
+      const errorMsg = err.response?.data?.error || "Failed to submit maintenance request";
+      addToast(errorMsg, "error");
     } finally {
       setSubmitting(false);
     }

@@ -135,7 +135,7 @@ const Profile = () => {
                {/* --- NEW SECTION: ID Upload (Only visible to Landlords in Edit Mode) --- */}
                {user.role === 'landlord' && (
                  <div className="col-span-2 border-t border-gray-100 pt-6 mt-2">
-                   <label className="block text-sm font-bold text-gray-800 uppercase mb-2 flex items-center gap-2">
+                   <label className="flex text-sm font-bold text-gray-800 uppercase mb-2 items-center gap-2">
                      <FaIdCard /> Identity Document
                    </label>
                    

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../layouts/DashboardLayout'; // ✅ Correct path (2 levels up)
-import api from '../../api/axios'; // ✅ Correct path (2 levels up)
+import DashboardLayout from '../../layouts/DashboardLayout'; // Correct path (2 levels up)
+import api from '../../api/axios'; // Correct path (2 levels up)
 import { 
-  FaHome, FaSearch, FaCalendarAlt, FaMoneyBillWave, 
-  FaCheckCircle, FaClock, FaTimesCircle, FaMapMarkerAlt 
+  FaHome, FaSearch, FaCalendarAlt, 
+  FaCheckCircle, FaClock, FaTimesCircle 
 } from 'react-icons/fa';
 
 const Applications = () => {

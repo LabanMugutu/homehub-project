@@ -59,25 +59,7 @@ const MyApplications = () => {
         </div>
       </div>
 
-      {/* 🔴 X-RAY DEBUG BOX: REMOVE THIS ONCE FIXED */}
-      <div className="bg-black text-green-400 p-6 rounded-xl font-mono text-xs overflow-auto max-h-64 shadow-2xl border-2 border-green-500">
-        <h3 className="text-white font-bold text-lg mb-2 border-b border-gray-700 pb-2 flex items-center gap-2">
-           <FaExclamationTriangle className="text-yellow-500"/> DIAGNOSTIC PANEL
-        </h3>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-           <div>
-              <strong>Items in State:</strong> <span className="text-white">{leases.length}</span>
-           </div>
-           <div>
-              <strong>Data Type:</strong> <span className="text-white">{Array.isArray(leases) ? "Array (Correct)" : "Object (Wrong)"}</span>
-           </div>
-        </div>
-        <strong>Raw Backend Response:</strong>
-        <pre className="mt-2 text-gray-300 whitespace-pre-wrap">
-          {JSON.stringify(debugData, null, 2)}
-        </pre>
-      </div>
-      {/* ------------------------------------------- */}
+      
 
       {leases.length > 0 ? (
         <div className="grid gap-6">

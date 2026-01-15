@@ -25,16 +25,22 @@ const DashboardLayout = ({ children, title, role }) => {
     ],
     landlord: [
       { label: 'Overview', path: '/dashboard', icon: <FaHome /> },
-      { label: 'My Properties', path: '/dashboard/landlord', icon: <FaBuilding /> }, // List of houses
-      { label: 'Lease Requests', path: '/dashboard/landlord/requests', icon: <FaClipboardList /> }, // Approvals
-      { label: 'Maintenance', path: '/dashboard/maintenance', icon: <FaTools /> },
+      { label: 'My Properties', path: '/dashboard/landlord', icon: <FaBuilding /> }, 
+      { label: 'Lease Requests', path: '/dashboard/landlord/requests', icon: <FaClipboardList /> }, 
+      
+      // 🟢 FIX: Point to the LANDLORD maintenance page
+      { label: 'Maintenance', path: '/dashboard/landlord/maintenance', icon: <FaTools /> },
+      
       { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> },
       { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
     ],
     tenant: [
       { label: 'Overview', path: '/dashboard', icon: <FaHome /> },
       { label: 'My Applications', path: '/dashboard/applications', icon: <FaClipboardList /> },
+      
+      // Tenant keeps the original link
       { label: 'Maintenance', path: '/dashboard/maintenance', icon: <FaTools /> },
+      
       { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> },
       { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
     ]
@@ -63,7 +69,7 @@ const DashboardLayout = ({ children, title, role }) => {
             <NavLink
               key={link.path}
               to={link.path}
-              end={link.path === '/dashboard' || link.path === '/admin'} // Exact match for home links
+              end={link.path === '/dashboard' || link.path === '/admin'} 
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors font-medium text-sm ${
                   isActive 
@@ -105,7 +111,6 @@ const DashboardLayout = ({ children, title, role }) => {
             <p className="text-sm text-gray-500 mt-1">Manage your {user.role} activities</p>
           </div>
           
-          {/* Quick Action Buttons could go here */}
           <div className="flex gap-4">
             <Link to="/" className="text-sm font-bold text-brand-blue hover:underline">
               Go to Website &rarr;

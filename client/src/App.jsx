@@ -24,6 +24,7 @@ import Applications from './pages/dashboard/Applications';
 import AddProperty from './pages/dashboard/landlord/AddProperty';
 import MyProperties from './pages/dashboard/landlord/MyProperties';
 import LeaseRequests from './pages/dashboard/landlord/LeaseRequests';
+import LandlordMaintenance from './pages/dashboard/landlord/LandlordMaintenance';
 
 // --- 5. Pages: Admin Specific ---
 import AdminDashboard from './pages/dashboard/AdminDashboard';
@@ -70,6 +71,7 @@ function App() {
         <Route path="/dashboard/landlord" element={<MyProperties />} />
         <Route path="/dashboard/landlord/add" element={<AddProperty />} />
         <Route path="/dashboard/landlord/requests" element={<LeaseRequests />} />
+        <Route path="/dashboard/landlord/maintenance" element={<LandlordMaintenance />} />
         
         {/* 4. Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />

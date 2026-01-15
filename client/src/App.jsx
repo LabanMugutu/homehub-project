@@ -15,9 +15,9 @@ import Register from './pages/Register';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import Settings from './pages/dashboard/Settings';
 import Notifications from './pages/dashboard/Notifications';
-import Maintenance from './pages/dashboard/Maintenance';;
+import Maintenance from './pages/dashboard/Maintenance';
 
-// 🟢 NEW: Import the specific Tenant Applications page we just created
+// 🟢 Tenant Specific Pages
 import Applications from './pages/dashboard/Applications';
 import TenantBilling from './pages/dashboard/TenantBilling';
 
@@ -29,7 +29,8 @@ import LandlordMaintenance from './pages/dashboard/landlord/LandlordMaintenance'
 import LandlordInvoices from './pages/dashboard/landlord/Invoices';
 
 // --- 5. Pages: Admin Specific ---
-import AdminDashboard from './pages/dashboard/AdminDashboard';
+// 🟢 UPDATE: Pointing to the new folder structure
+import AdminDashboard from './pages/dashboard/admin/AdminDashboard';
 
 // --- 6. PLACEHOLDER COMPONENT ---
 const ComingSoon = ({ title }) => (
@@ -65,10 +66,9 @@ function App() {
         <Route path="/dashboard/maintenance" element={<Maintenance />} />
 
         {/* 2. Tenant Routes */}
-        {/* 🟢 THIS NOW POINTS TO YOUR NEW FILE */}
-       <Route path="/dashboard/applications" element={<Applications />} />
-       <Route path="/dashboard/favorites" element={<ComingSoon title="Saved Homes" />} />
-       <Route path="/dashboard/billing" element={<TenantBilling />} />
+        <Route path="/dashboard/applications" element={<Applications />} />
+        <Route path="/dashboard/favorites" element={<ComingSoon title="Saved Homes" />} />
+        <Route path="/dashboard/billing" element={<TenantBilling />} />
 
         {/* 3. Landlord Routes */}
         <Route path="/dashboard/landlord" element={<MyProperties />} />
@@ -78,6 +78,7 @@ function App() {
         <Route path="/dashboard/landlord/invoices" element={<LandlordInvoices />} />
         
         {/* 4. Admin Routes */}
+        {/* 🟢 Points to the new AdminDashboard component */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/dashboard/admin" element={<AdminDashboard />} />
 

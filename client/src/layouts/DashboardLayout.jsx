@@ -33,6 +33,7 @@ const DashboardLayout = ({ children, title, role }) => {
       
       { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> },
       { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
+      { label: 'Invoicing', path: '/dashboard/landlord/invoices', icon: <FaFileInvoiceDollar /> },
     ],
     tenant: [
       { label: 'Overview', path: '/dashboard', icon: <FaHome /> },
@@ -43,6 +44,7 @@ const DashboardLayout = ({ children, title, role }) => {
       
       { label: 'Notifications', path: '/dashboard/notifications', icon: <FaBell /> },
       { label: 'Settings', path: '/dashboard/settings', icon: <FaCog /> },
+      { label: 'Billing & Payments', path: '/dashboard/billing', icon: <FaMobileAlt /> },
     ]
   };
 

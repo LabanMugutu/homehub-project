@@ -15,6 +15,7 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Fetch specifically from the new admin endpoints
       const [landlordsRes, propsRes] = await Promise.all([
         api.get('/admin/landlords/pending'),
         api.get('/admin/properties/pending')
@@ -40,7 +41,7 @@ const AdminDashboard = () => {
       setPendingLandlords(prev => prev.filter(l => l.id !== id));
       alert(`Landlord ${action}ed successfully.`);
     } catch (err) {
-      alert("Action failed: " + err.response?.data?.error);
+      alert("Action failed: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -51,11 +52,11 @@ const AdminDashboard = () => {
       setPendingProperties(prev => prev.filter(p => p.id !== id));
       alert(`Property ${action}ed successfully.`);
     } catch (err) {
-      alert("Action failed: " + err.response?.data?.error);
+      alert("Action failed: " + (err.response?.data?.error || err.message));
     }
   };
 
-  // --- RENDER HELPERS ---
+  // --- UI COMPONENTS ---
   const TabButton = ({ id, label, count, icon }) => (
     <button 
       onClick={() => setActiveTab(id)}
@@ -77,8 +78,7 @@ const AdminDashboard = () => {
 
   return (
     <DashboardLayout title="Admin Control Center" role="admin">
-      
-      {/* 1. STATUS HEADER */}
+      {/* HEADER STATS */}
       <div className="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
         <div>
           <h2 className="text-xl font-bold text-gray-800">System Status</h2>
@@ -99,9 +99,9 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* 2. TABS */}
+      {/* TABS CONTAINER */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px]">
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 overflow-x-auto">
           <TabButton id="overview" label="Overview" count={0} icon={<FaUserShield />} />
           <TabButton id="landlords" label="Verify Landlords" count={pendingLandlords.length} icon={<FaIdCard />} />
           <TabButton id="properties" label="Verify Properties" count={pendingProperties.length} icon={<FaBuilding />} />
@@ -112,7 +112,7 @@ const AdminDashboard = () => {
             <div className="flex justify-center items-center h-64 text-gray-400">Loading data...</div>
           ) : (
             <>
-              {/* === OVERVIEW TAB === */}
+              {/* === TAB 1: OVERVIEW === */}
               {activeTab === 'overview' && (
                 <div className="text-center py-20">
                   <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -120,48 +120,46 @@ const AdminDashboard = () => {
                   </div>
                   <h3 className="text-xl font-bold text-gray-800">Welcome, Administrator</h3>
                   <p className="text-gray-500 max-w-md mx-auto mt-2">
-                    Use the tabs above to review pending landlord registrations and property listings. 
-                    Ensure all documents are valid before approving.
+                    Use the tabs above to review pending landlord registrations and property listings.
                   </p>
                 </div>
               )}
 
-              {/* === LANDLORDS TAB === */}
+              {/* === TAB 2: LANDLORDS === */}
               {activeTab === 'landlords' && (
                 <div className="space-y-4">
                   {pendingLandlords.length === 0 ? (
-                    <p className="text-gray-500 text-center py-10">No pending landlord verifications.</p>
+                    <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                        <p className="text-gray-500 font-bold">No pending landlords found.</p>
+                        <p className="text-xs text-gray-400 mt-1">New registrations will appear here automatically.</p>
+                    </div>
                   ) : (
                     pendingLandlords.map((l) => (
-                      <div key={l.id} className="flex flex-col md:flex-row gap-6 p-6 border rounded-xl hover:shadow-md transition">
+                      <div key={l.id} className="flex flex-col md:flex-row gap-6 p-6 border rounded-xl hover:shadow-md transition bg-white">
                         <div className="flex-1">
-                          <h4 className="text-lg font-bold text-gray-800">{l.full_name}</h4>
-                          <div className="grid grid-cols-2 gap-4 mt-2 text-sm text-gray-600">
-                            <p><strong>Email:</strong> {l.email}</p>
-                            <p><strong>Phone:</strong> {l.phone}</p>
-                            <p><strong>National ID:</strong> {l.national_id}</p>
-                            <p><strong>KRA PIN:</strong> {l.kra_pin}</p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-lg font-bold text-gray-800">{l.full_name}</h4>
+                            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-bold">Pending</span>
                           </div>
-                          <p className="text-xs text-gray-400 mt-2">Registered: {new Date(l.created_at).toLocaleDateString()}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                            <p>📧 {l.email}</p>
+                            <p>📞 {l.phone}</p>
+                            <p>🆔 {l.national_id || "N/A"}</p>
+                            <p>📍 KRA: {l.kra_pin || "N/A"}</p>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-3">Registered: {new Date(l.created_at).toLocaleString()}</p>
                         </div>
                         
-                        {/* ID Preview (Placeholder logic if no real image) */}
-                        <div className="w-32 h-20 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
-                            {l.evidence_of_identity ? (
-                                <a href={l.evidence_of_identity} target="_blank" rel="noreferrer" className="text-blue-600 text-xs font-bold underline">View ID</a>
-                            ) : <span className="text-xs text-gray-400">No ID Uploaded</span>}
-                        </div>
-
-                        <div className="flex flex-col gap-2 justify-center">
+                        <div className="flex flex-col gap-2 justify-center min-w-[150px]">
                           <button 
                             onClick={() => verifyLandlord(l.id, 'approve')}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-sm"
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-sm shadow-sm"
                           >
                             <FaCheckCircle /> Approve
                           </button>
                           <button 
                             onClick={() => verifyLandlord(l.id, 'reject')}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition font-bold text-sm"
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition font-bold text-sm"
                           >
                             <FaTimesCircle /> Reject
                           </button>
@@ -172,43 +170,42 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* === PROPERTIES TAB === */}
+              {/* === TAB 3: PROPERTIES === */}
               {activeTab === 'properties' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   {pendingProperties.length === 0 ? (
-                    <p className="text-gray-500 text-center col-span-2 py-10">No pending property verifications.</p>
+                    <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                        <p className="text-gray-500 font-bold">No pending properties.</p>
+                    </div>
                   ) : (
                     pendingProperties.map((p) => (
-                      <div key={p.id} className="border rounded-xl overflow-hidden hover:shadow-lg transition flex flex-col">
-                        <div className="h-48 bg-gray-200 relative">
+                      <div key={p.id} className="border rounded-xl overflow-hidden hover:shadow-lg transition bg-white flex flex-col md:flex-row h-auto md:h-48">
+                        <div className="w-full md:w-64 bg-gray-200 relative">
                           <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-                          <span className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded">
-                            {p.status}
-                          </span>
                         </div>
-                        <div className="p-4 flex-1">
-                          <h4 className="text-lg font-bold text-gray-800">{p.name}</h4>
-                          <p className="text-sm text-gray-500 flex items-center gap-1 mb-2">
-                            <FaMapMarkerAlt /> {p.location}
-                          </p>
-                          <div className="flex justify-between text-sm font-bold text-gray-700 border-t pt-3 mt-2">
-                            <span>{p.landlord_name}</span>
-                            <span>KSh {p.price.toLocaleString()}</span>
+                        <div className="p-6 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h4 className="text-lg font-bold text-gray-800">{p.name}</h4>
+                            <p className="text-sm text-gray-500 mb-2">{p.location}</p>
+                            <div className="flex gap-4 text-sm mt-2">
+                                <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold">KSh {p.price.toLocaleString()}</span>
+                                <span className="text-gray-600">Owner: <strong>{p.landlord_name}</strong></span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="bg-gray-50 p-4 flex gap-3 border-t">
-                          <button 
-                            onClick={() => verifyProperty(p.id, 'approve')}
-                            className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm"
-                          >
-                            Approve
-                          </button>
-                          <button 
-                            onClick={() => verifyProperty(p.id, 'reject')}
-                            className="flex-1 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-bold text-sm"
-                          >
-                            Reject
-                          </button>
+                          <div className="flex gap-3 mt-4">
+                            <button 
+                                onClick={() => verifyProperty(p.id, 'approve')}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm"
+                            >
+                                Approve Listing
+                            </button>
+                            <button 
+                                onClick={() => verifyProperty(p.id, 'reject')}
+                                className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-bold text-sm"
+                            >
+                                Reject
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -219,7 +216,6 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
-
     </DashboardLayout>
   );
 };

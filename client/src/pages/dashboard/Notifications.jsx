@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import api from '../../api/axios';
-import { FaBell, FaCheckCircle, FaExclamationCircle, FaInfoCircle, FaTrash } from 'react-icons/fa';
+import { 
+  FaBell, FaCheck, FaTrash, FaTools, FaHome, FaInfoCircle, FaClock 
+} from 'react-icons/fa';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const user = JSON.parse(localStorage.getItem('user'));
 
-  // 1. Fetch REAL Data from Backend
+  // 1. Fetch Notifications
   const fetchNotifications = async () => {
     try {
-      const res = await api.get('/notifications');
+      const res = await api.get('/users/notifications');
       setNotifications(res.data);
-    } catch (error) {
-      console.error("Failed to fetch notifications", error);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
     } finally {
       setLoading(false);
     }
@@ -24,82 +25,118 @@ const Notifications = () => {
     fetchNotifications();
   }, []);
 
-  // 2. Mark as Read
-  const handleMarkRead = async (id) => {
+  // 2. Actions
+  const markAsRead = async (id) => {
     try {
-      await api.patch(`/notifications/${id}/read`);
-      // Update UI instantly
-      setNotifications(notifications.map(n => 
-        n.id === id ? { ...n, is_read: true } : n
-      ));
-    } catch (error) {
-      console.error("Error updating notification");
+      // Optimistic update
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      await api.patch(`/users/notifications/${id}/read`);
+    } catch (err) {
+      console.error("Failed to mark read");
     }
   };
 
-  // 3. Delete Notification
-  const handleDelete = async (id) => {
-    if(!window.confirm("Delete this alert?")) return;
+  const clearAll = async () => {
+    if(!window.confirm("Clear all notifications?")) return;
     try {
-      await api.delete(`/notifications/${id}`);
-      setNotifications(notifications.filter(n => n.id !== id));
-    } catch (error) {
-      console.error("Error deleting notification");
+      setNotifications([]);
+      await api.delete('/users/notifications/clear');
+    } catch (err) {
+      console.error("Failed to clear");
     }
   };
 
-  const getIcon = (type) => {
-    switch(type) {
-      case 'success': return <FaCheckCircle className="text-green-500 text-xl" />;
-      case 'alert': return <FaExclamationCircle className="text-orange-500 text-xl" />;
-      default: return <FaInfoCircle className="text-brand-blue text-xl" />;
+  // 3. Helper: Get Icon based on message content
+  const getIcon = (msg) => {
+    const text = msg.toLowerCase();
+    if (text.includes('maintenance') || text.includes('repair') || text.includes('fix')) {
+      return <div className="bg-orange-100 p-3 rounded-full text-orange-600"><FaTools /></div>;
     }
+    if (text.includes('lease') || text.includes('property') || text.includes('rent')) {
+      return <div className="bg-blue-100 p-3 rounded-full text-blue-600"><FaHome /></div>;
+    }
+    if (text.includes('approved') || text.includes('success')) {
+      return <div className="bg-green-100 p-3 rounded-full text-green-600"><FaCheck /></div>;
+    }
+    return <div className="bg-gray-100 p-3 rounded-full text-gray-600"><FaInfoCircle /></div>;
   };
 
   return (
-    <DashboardLayout title="Notifications" role={user.role}>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="font-bold text-gray-800 flex items-center gap-2">
-            <FaBell className="text-gray-400" /> Your Activity
-          </h2>
-          <button onClick={fetchNotifications} className="text-xs text-brand-blue hover:underline">
-            Refresh
-          </button>
+    <DashboardLayout title="Notifications" role="tenant"> {/* Role prop is just for layout link highlighting */}
+      
+      <div className="max-w-4xl mx-auto">
+        {/* Header Actions */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-800">Activity Feed</h2>
+            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">
+              {notifications.filter(n => !n.is_read).length} New
+            </span>
+          </div>
+          
+          {notifications.length > 0 && (
+            <button 
+              onClick={clearAll}
+              className="text-gray-500 hover:text-red-600 text-sm font-medium flex items-center gap-2 transition"
+            >
+              <FaTrash className="text-xs" /> Clear All
+            </button>
+          )}
         </div>
 
+        {/* List */}
         {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading alerts...</div>
-        ) : notifications.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              <p>No new notifications found.</p>
-              <p className="text-xs text-gray-400 mt-2">Real-time alerts will appear here.</p>
-            </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {notifications.map((note) => (
+          <div className="space-y-4 animate-pulse">
+            {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 rounded-xl"></div>)}
+          </div>
+        ) : notifications.length > 0 ? (
+          <div className="space-y-3">
+            {notifications.map((notif) => (
               <div 
-                key={note.id} 
-                onClick={() => !note.is_read && handleMarkRead(note.id)}
-                className={`p-6 flex gap-4 transition cursor-pointer ${note.is_read ? 'bg-white' : 'bg-blue-50'}`}
+                key={notif.id} 
+                className={`flex gap-4 p-5 rounded-xl border transition-all hover:shadow-md ${
+                  notif.is_read 
+                    ? 'bg-white border-gray-100' 
+                    : 'bg-blue-50/50 border-blue-100 shadow-sm'
+                }`}
               >
-                <div className="mt-1 flex-shrink-0">{getIcon(note.type)}</div>
-                <div className="flex-1">
-                  <p className={`text-gray-800 text-sm md:text-base ${!note.is_read ? 'font-bold' : ''}`}>
-                    {note.message}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(note.created_at).toLocaleDateString()} • {new Date(note.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </p>
+                {/* Icon */}
+                <div className="flex-shrink-0 mt-1">
+                  {getIcon(notif.message)}
                 </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
-                  className="text-gray-300 hover:text-red-500 transition"
-                >
-                  <FaTrash />
-                </button>
+
+                {/* Content */}
+                <div className="flex-1">
+                  <p className={`text-gray-800 mb-1 ${!notif.is_read ? 'font-bold' : 'font-medium'}`}>
+                    {notif.message}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <FaClock /> {new Date(notif.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action */}
+                {!notif.is_read && (
+                  <button 
+                    onClick={() => markAsRead(notif.id)}
+                    className="self-center p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition"
+                    title="Mark as read"
+                  >
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  </button>
+                )}
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
+            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaBell className="text-3xl text-gray-300" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-400">All caught up!</h3>
+            <p className="text-gray-400 text-sm">You have no new notifications.</p>
           </div>
         )}
       </div>

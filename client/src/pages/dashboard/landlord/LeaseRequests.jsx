@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../../layouts/DashboardLayout';
 import api from '../../../api/axios';
 import { FaCheck, FaTimes, FaUser, FaHome, FaSpinner } from 'react-icons/fa';
-
+import { useToast } from '../../../context/ToastContext.jsx';
 const LeaseRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
 
   const fetchRequests = async () => {
     try {
@@ -30,9 +31,9 @@ const LeaseRequests = () => {
       await api.post(`/leases/${id}/status`, { status });
       // Remove from list immediately
       setRequests(requests.filter(r => r.id !== id));
-      alert(`Application ${status} successfully!`);
+      addToast(`Application ${status} successfully!`);
     } catch (err) {
-      alert("Action failed: " + (err.response?.data?.error || err.message));
+      addToast("Action failed: " + (err.response?.data?.error || err.message), "error");
     }
   };
 

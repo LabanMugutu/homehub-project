@@ -3,11 +3,13 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../../layouts/DashboardLayout';
 import { FaBuilding, FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined, FaMoneyBillWave, FaCamera } from 'react-icons/fa';
+import { useToast } from '../../../context/ToastContext.jsx';
 
 const AddProperty = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
+  const { addToast } = useToast();
   // State for text fields
   const [formData, setFormData] = useState({
     name: '', 
@@ -75,7 +77,7 @@ const AddProperty = () => {
         }
       });
 
-      alert("Property Listed Successfully! 🏠");
+      addToast("Property listed successfully!", "success");
       navigate('/dashboard/landlord'); 
 
     } catch (error) {
@@ -118,7 +120,7 @@ const AddProperty = () => {
           {/* Section 2: Location */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-3">
-              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+              <label className="flex text-sm font-bold text-gray-700 mb-2 items-center gap-2">
                 <FaMapMarkerAlt className="text-gray-400" /> Address
               </label>
               <input name="address" type="text" placeholder="Street Address" className="w-full px-4 py-3 rounded border focus:ring-2 focus:ring-blue-500 outline-none" onChange={handleChange} required />
